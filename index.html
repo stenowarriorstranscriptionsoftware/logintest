@@ -1,18 +1,85 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Steno Warriors Transcription</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <meta charset="utf-8" />
+  <title>Steno Warriors Transcription Software</title>
   <link rel="stylesheet" href="styles.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
+  <script src="lookup.js"></script>
+  <script src="textLookup.js"></script>
+  <script src="1c2.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+  <div class="header">
+    <h1>Steno Warriors Transcription Software</h1>
+  </div>
+
+  <!-- 🔐 Login Section -->
+  <div class="main">
+    <h2>👤 Login</h2>
+    <div style="margin-bottom: 20px;">
+      <button id="loginBtn">Sign in with Google</button>
+      <button id="logoutBtn" style="display:none;">Logout</button>
+      <div id="userInfo" style="margin-top:10px; display:none;">
+        <p id="userName"></p>
+        <p id="userEmail"></p>
+        <img id="userPhoto" src="" style="width:50px; border-radius:50%;" />
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔒 Hidden Test Area: Shown After Login -->
+  <div id="testContainer" style="display: none;">
+    <div class="main">
+      <h2>Please select a Test</h2>
+      <div class="select-panel">
+        <select id="volume-select">
+          <option value="1">Test 1-22</option>
+          <option value="2">Test 23-44</option>
+          <option value="3">Test 45-66</option>
+          <option value="4">Test 67-88</option>
+          <option value="5">Test 89-110</option>
+        </select>
+        <select id="test-select"></select>
+        <select id="speed-select">
+          <option value="70">70 WPM</option>
+          <option value="75">75 WPM</option>
+          <option value="80">80 WPM</option>
+          <option value="85">85 WPM</option>
+          <option value="90">90 WPM</option>
+          <option value="95">95 WPM</option>
+          <option value="100">100 WPM</option>
+        </select>
+      </div>
+
+      <div id="video-container"></div>
+      <div class="timer-container">
+        Typing timer: <span id="timer">50:00</span>
+        <div class="timer-controls">
+          <label><input type="radio" name="duration" value="2400"> 40 min</label>
+          <label><input type="radio" name="duration" value="3000" checked> 50 min</label>
+          <button id="startPause" class="tmrBtn">Start</button>
+          <button id="reset" class="tmrBtn">Reset</button>
+        </div>
+      </div>
+
+      <div id="paragraphA"></div>
+      <textarea class="inputBox" id="paragraphB" spellcheck="false" placeholder="Click Start to begin typing" disabled></textarea>
+      <div class="resultText" id="textBoxC" style="display: none;"></div>
+      <button onclick="downloadPDF()" class="download-btn">Show Result</button>
+    </div>
+
+    <div class="footer">
+      <div>
+        Made with <span style="color: red;">&hearts;</span> &middot; Anish &middot; <a href="#">Contact</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth & UI Control -->
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBjY-pE5jxQJgKqDZrcE7Im66_5r-X_mRA",
@@ -23,111 +90,45 @@
       appId: "1:341251531099:web:f4263621455541ffdc3a7e",
       measurementId: "G-ZXFC7NR9HV"
     };
+
     firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const userInfo = document.getElementById("userInfo");
+    const userName = document.getElementById("userName");
+    const userEmail = document.getElementById("userEmail");
+    const userPhoto = document.getElementById("userPhoto");
+    const testContainer = document.getElementById("testContainer");
+
+    loginBtn.onclick = () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).catch(console.error);
+    };
+
+    logoutBtn.onclick = () => auth.signOut();
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        loginBtn.style.display = "none";
+        logoutBtn.style.display = "inline-block";
+        userInfo.style.display = "block";
+        userName.textContent = `👋 Hello, ${user.displayName}`;
+        userEmail.textContent = user.email;
+        userPhoto.src = user.photoURL;
+        testContainer.style.display = "block";
+      } else {
+        loginBtn.style.display = "inline-block";
+        logoutBtn.style.display = "none";
+        userInfo.style.display = "none";
+        testContainer.style.display = "none";
+      }
+    });
   </script>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <h1>Steno Warriors</h1>
-      <p class="subtitle">Advanced Transcription Comparison Tool</p>
-    </header>
 
-    <!-- Google Login Section -->
-    <section class="input-section">
-      <h2>User Login</h2>
-      <div id="authArea">
-        <button id="loginBtn">Sign in with Google</button>
-        <button id="logoutBtn" class="secondary-btn" style="display:none;">Logout</button>
-        <p id="userGreeting" style="margin-top: 10px;"></p>
-        <img id="userPhoto" style="width:60px; border-radius: 50%; display:none;" />
-      </div>
-    </section>
-
-    <main>
-      <section class="input-section">
-        <div class="input-group" id="originalTextGroup">
-          <label for="originalText">Original Text</label>
-          <textarea id="originalText" placeholder="Paste the original text here..."></textarea>
-        </div>
-
-        <div id="timerOptions" class="timer-options hidden">
-          <button class="timer-option" data-minutes="40">40 Minutes</button>
-          <button class="timer-option" data-minutes="50">50 Minutes</button>
-        </div>
-
-        <div id="timerDisplay" class="timer-display hidden"></div>
-
-        <div class="input-group">
-          <label for="userText">Your Transcription</label>
-          <textarea id="userText" placeholder="Type or paste your transcription here..."></textarea>
-        </div>
-
-        <div class="button-group test-controls">
-          <button id="compareBtn">Compare Texts</button>
-          <button id="showFullTextBtn" class="secondary-btn">View Full Texts</button>
-          <button id="closeResultsBtn" class="close-results-btn hidden">Close Results</button>
-        </div>
-      </section>
-
-      <section id="results" class="hidden">
-        <div class="results-header">
-          <div>
-            <h2>Results</h2>
-            <div class="result-meta">
-              <span id="resultDate"></span>
-              <span>Steno Warriors Transcription Tool</span>
-            </div>
-          </div>
-          <button id="downloadPdfBtn" class="download-btn">Download as PDF</button>
-        </div>
-
-        <div class="comparison-section">
-          <div class="legend-box">
-            <div class="legend-row"><span class="correct">■</span> Correct</div>
-            <div class="legend-row"><span class="missing">■</span> Missing</div>
-            <div class="legend-row"><span class="addition">■</span> Added</div>
-            <div class="legend-row"><span class="spelling">■</span> Spelling</div>
-            <div class="legend-row"><span class="capitalization">■</span> Capitalization</div>
-          </div>
-          <div id="comparisonResult" class="result-box"></div>
-        </div>
-
-        <div class="analysis-section">
-          <div class="analysis-column">
-            <h3>Statistics</h3>
-            <div id="stats" class="stats-box"></div>
-          </div>
-          <div class="analysis-column">
-            <h3>Feedback</h3>
-            <div id="feedback" class="feedback-box"></div>
-          </div>
-        </div>
-      </section>
-
-      <section id="fullTextSection" class="hidden">
-        <div class="fulltext-header">
-          <h2>Full Texts</h2>
-          <button id="backToResultsBtn" class="secondary-btn">Back to Results</button>
-        </div>
-        <div class="columns">
-          <div class="column">
-            <h3>Original Text</h3>
-            <div id="originalDisplay" class="text-display"></div>
-          </div>
-          <div class="column">
-            <h3>Your Transcription</h3>
-            <div id="userDisplay" class="text-display"></div>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <footer>
-      <p>© 2023 Steno Warriors | Professional Transcription Tool</p>
-    </footer>
-  </div>
-
-  <script src="script.js"></script>
+  <!-- Optional: PDF Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </body>
 </html>
