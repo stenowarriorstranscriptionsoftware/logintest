@@ -2,60 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Google Login Demo</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #f3f4f6;
-      color: #111;
-      padding: 30px;
-      text-align: center;
-    }
-    .card {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      display: inline-block;
-    }
-    #userProfile img {
-      width: 80px;
-      border-radius: 50%;
-      margin-top: 10px;
-    }
-    button {
-      padding: 10px 20px;
-      background: #3b82f6;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      margin: 10px;
-      cursor: pointer;
-    }
-  </style>
-</head>
-<body>
-
-  <h1>🔐 Google Login Demo</h1>
-
-  <div class="card">
-    <div id="userProfile">
-      <p id="userName"></p>
-      <p id="userEmail"></p>
-      <img id="userPhoto" src="" alt="" style="display:none;" />
-    </div>
-    <button id="loginBtn">Sign in with Google</button>
-    <button id="logoutBtn" style="display:none;">Logout</button>
-  </div>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Steno Warriors Transcription</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore-compat.js"></script>
-
   <script>
-    // ✅ Replace with your actual Firebase project config
     const firebaseConfig = {
       apiKey: "AIzaSyBjY-pE5jxQJgKqDZrcE7Im66_5r-X_mRA",
       authDomain: "setup-login-page.firebaseapp.com",
@@ -65,66 +23,111 @@
       appId: "1:341251531099:web:f4263621455541ffdc3a7e",
       measurementId: "G-ZXFC7NR9HV"
     };
-
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-
-    const loginBtn = document.getElementById("loginBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const userName = document.getElementById("userName");
-    const userEmail = document.getElementById("userEmail");
-    const userPhoto = document.getElementById("userPhoto");
-
-    loginBtn.onclick = () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider)
-        .then(result => {
-          const user = result.user;
-          showUser(user);
-          db.collection("users").doc(user.uid).set({
-            name: user.displayName,
-            email: user.email,
-            photo: user.photoURL,
-            lastLogin: new Date()
-          });
-        })
-        .catch(err => {
-          alert("Login error: " + err.message);
-          console.error(err);
-        });
-    };
-
-    logoutBtn.onclick = () => {
-      auth.signOut();
-    };
-
-    auth.onAuthStateChanged(user => {
-      if (user) {
-        showUser(user);
-      } else {
-        hideUser();
-      }
-    });
-
-    function showUser(user) {
-      userName.textContent = "👋 Hello, " + user.displayName;
-      userEmail.textContent = user.email;
-      userPhoto.src = user.photoURL;
-      userPhoto.style.display = "block";
-      loginBtn.style.display = "none";
-      logoutBtn.style.display = "inline-block";
-    }
-
-    function hideUser() {
-      userName.textContent = "";
-      userEmail.textContent = "";
-      userPhoto.src = "";
-      userPhoto.style.display = "none";
-      loginBtn.style.display = "inline-block";
-      logoutBtn.style.display = "none";
-    }
   </script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Steno Warriors</h1>
+      <p class="subtitle">Advanced Transcription Comparison Tool</p>
+    </header>
+
+    <!-- Google Login Section -->
+    <section class="input-section">
+      <h2>User Login</h2>
+      <div id="authArea">
+        <button id="loginBtn">Sign in with Google</button>
+        <button id="logoutBtn" class="secondary-btn" style="display:none;">Logout</button>
+        <p id="userGreeting" style="margin-top: 10px;"></p>
+        <img id="userPhoto" style="width:60px; border-radius: 50%; display:none;" />
+      </div>
+    </section>
+
+    <main>
+      <section class="input-section">
+        <div class="input-group" id="originalTextGroup">
+          <label for="originalText">Original Text</label>
+          <textarea id="originalText" placeholder="Paste the original text here..."></textarea>
+        </div>
+
+        <div id="timerOptions" class="timer-options hidden">
+          <button class="timer-option" data-minutes="40">40 Minutes</button>
+          <button class="timer-option" data-minutes="50">50 Minutes</button>
+        </div>
+
+        <div id="timerDisplay" class="timer-display hidden"></div>
+
+        <div class="input-group">
+          <label for="userText">Your Transcription</label>
+          <textarea id="userText" placeholder="Type or paste your transcription here..."></textarea>
+        </div>
+
+        <div class="button-group test-controls">
+          <button id="compareBtn">Compare Texts</button>
+          <button id="showFullTextBtn" class="secondary-btn">View Full Texts</button>
+          <button id="closeResultsBtn" class="close-results-btn hidden">Close Results</button>
+        </div>
+      </section>
+
+      <section id="results" class="hidden">
+        <div class="results-header">
+          <div>
+            <h2>Results</h2>
+            <div class="result-meta">
+              <span id="resultDate"></span>
+              <span>Steno Warriors Transcription Tool</span>
+            </div>
+          </div>
+          <button id="downloadPdfBtn" class="download-btn">Download as PDF</button>
+        </div>
+
+        <div class="comparison-section">
+          <div class="legend-box">
+            <div class="legend-row"><span class="correct">■</span> Correct</div>
+            <div class="legend-row"><span class="missing">■</span> Missing</div>
+            <div class="legend-row"><span class="addition">■</span> Added</div>
+            <div class="legend-row"><span class="spelling">■</span> Spelling</div>
+            <div class="legend-row"><span class="capitalization">■</span> Capitalization</div>
+          </div>
+          <div id="comparisonResult" class="result-box"></div>
+        </div>
+
+        <div class="analysis-section">
+          <div class="analysis-column">
+            <h3>Statistics</h3>
+            <div id="stats" class="stats-box"></div>
+          </div>
+          <div class="analysis-column">
+            <h3>Feedback</h3>
+            <div id="feedback" class="feedback-box"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="fullTextSection" class="hidden">
+        <div class="fulltext-header">
+          <h2>Full Texts</h2>
+          <button id="backToResultsBtn" class="secondary-btn">Back to Results</button>
+        </div>
+        <div class="columns">
+          <div class="column">
+            <h3>Original Text</h3>
+            <div id="originalDisplay" class="text-display"></div>
+          </div>
+          <div class="column">
+            <h3>Your Transcription</h3>
+            <div id="userDisplay" class="text-display"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>© 2023 Steno Warriors | Professional Transcription Tool</p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
 </body>
 </html>
