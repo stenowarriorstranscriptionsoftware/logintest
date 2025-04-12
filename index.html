@@ -1,42 +1,52 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
+  <meta http-equiv="content-type" content="text/html;charset=utf-8" />
   <title>Steno Warriors Transcription Software</title>
-  <link rel="stylesheet" href="styles.css">
-  <script src="lookup.js"></script>
-  <script src="textLookup.js"></script>
-  <script src="1c2.js"></script>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <!-- Firebase SDKs -->
+  <!-- Add Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+  <script src="lookup.js"></script>
+  <script src="textLookup.js"></script>
+  <script src="1c2.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com/">
+  <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body>
-  <div class="header">
-    <h1>Steno Warriors Transcription Software</h1>
-  </div>
 
-  <!-- Login Section -->
-  <div class="main">
-    <h2>👤 Login</h2>
-    <div style="margin-bottom: 20px;">
-      <button id="loginBtn">Sign in with Google</button>
-      <button id="logoutBtn" style="display:none;">Logout</button>
-      <div id="userInfo" style="margin-top:10px; display:none;">
-        <p id="userName"></p>
-        <p id="userEmail"></p>
-        <img id="userPhoto" src="" style="width:50px; border-radius:50%;" />
-      </div>
+<body>
+  <!-- Add login container at the top -->
+  <div id="login-container" class="login-container">
+    <div class="login-content">
+      <h2>Welcome to Steno Warriors</h2>
+      <p>Please sign in with Google to access the transcription tests</p>
+      <button id="googleSignIn" class="google-signin-btn">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google logo">
+        Sign in with Google
+      </button>
     </div>
   </div>
 
-  <!-- Test + Leaderboard (Hidden until login) -->
-  <div id="testContainer" style="display: none;">
-    <div class="main">
-      <h2>Select a Test</h2>
+  <div class="header">
+    <h1>Steno Warriors Transcription Software</h1>
+    <div id="user-info" style="display: none;">
+      <img id="user-photo" width="40" height="40" style="border-radius: 50%; vertical-align: middle;">
+      <span id="user-name" style="margin: 0 10px;"></span>
+      <button id="signOut" class="sign-out-btn">Sign Out</button>
+    </div>
+  </div>
+
+  <div class="main" id="app-content" style="display: none;">
+    <div class="app-tabs">
+      <button class="tab-button active" data-tab="test">Take Test</button>
+      <button class="tab-button" data-tab="leaderboard">🏆 Leaderboard</button>
+    </div>
+
+    <div id="test-tab" class="tab-content active">
+      <h2>Please select a Test</h2>
       <div class="select-panel">
         <select id="volume-select">
           <option value="1">Test 1-22</option>
@@ -45,7 +55,10 @@
           <option value="4">Test 67-88</option>
           <option value="5">Test 89-110</option>
         </select>
-        <select id="test-select"></select>
+
+        <select id="test-select">
+        </select>
+      
         <select id="speed-select">
           <option value="70">70 WPM</option>
           <option value="75">75 WPM</option>
@@ -56,8 +69,8 @@
           <option value="100">100 WPM</option>
         </select>
       </div>
-
       <div id="video-container"></div>
+
       <div class="timer-container">
         Typing timer: <span id="timer">50:00</span>
         <div class="timer-controls">
@@ -67,121 +80,343 @@
           <button id="reset" class="tmrBtn">Reset</button>
         </div>
       </div>
-
+      
       <div id="paragraphA"></div>
       <textarea class="inputBox" id="paragraphB" spellcheck="false" placeholder="Click Start to begin typing" disabled></textarea>
       <div class="resultText" id="textBoxC" style="display: none;"></div>
-      <button onclick="saveResultToFirestore()" class="download-btn">Submit & Save Result</button>
+      <button onclick="downloadPDF()" class="download-btn">Show Result</button>
+    </div>
 
-      <!-- Leaderboard -->
-      <div class="main" style="margin-top: 50px;">
-        <h2>🏆 Leaderboard</h2>
-        <table style="width:100%; border-collapse: collapse;">
+    <div id="leaderboard-tab" class="tab-content">
+      <h2>🏆 Leaderboard</h2>
+      <div class="leaderboard-controls">
+        <select id="leaderboard-test-select">
+          <option value="all">All Tests</option>
+          <!-- Options will be populated dynamically -->
+        </select>
+        <select id="leaderboard-speed-select">
+          <option value="all">All Speeds</option>
+          <option value="70">70 WPM</option>
+          <option value="75">75 WPM</option>
+          <option value="80">80 WPM</option>
+          <option value="85">85 WPM</option>
+          <option value="90">90 WPM</option>
+          <option value="95">95 WPM</option>
+          <option value="100">100 WPM</option>
+        </select>
+      </div>
+      <div id="leaderboard-content">
+        <table>
           <thead>
             <tr>
               <th>Rank</th>
-              <th>Name</th>
-              <th>Score</th>
+              <th>User</th>
+              <th>Test</th>
+              <th>Speed</th>
               <th>Accuracy</th>
-              <th>Time</th>
+              <th>WPM</th>
+              <th>Date</th>
             </tr>
           </thead>
-          <tbody id="leaderboardBody"></tbody>
+          <tbody id="leaderboard-entries">
+            <!-- Leaderboard entries will be populated here -->
+          </tbody>
         </table>
       </div>
     </div>
   </div>
 
+  <div class="footer">
+    <div>
+      Made with <span style="color: red;">&hearts;</span> &middot; Anish &middot; <a href=""> Contact </a>
+    </div>
+  </div>
+
+  <!-- Add these scripts before your main script -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
   <script>
+    // Initialize Firebase with your config
     const firebaseConfig = {
       apiKey: "AIzaSyBjY-pE5jxQJgKqDZrcE7Im66_5r-X_mRA",
       authDomain: "setup-login-page.firebaseapp.com",
       projectId: "setup-login-page",
       storageBucket: "setup-login-page.appspot.com",
       messagingSenderId: "341251531099",
-      appId: "1:341251531099:web:f4263621455541ffdc3a7e"
+      appId: "1:341251531099:web:f4263621455541ffdc3a7e",
+      measurementId: "G-ZXFC7NR9HV"
     };
 
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    const loginBtn = document.getElementById("loginBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const userInfo = document.getElementById("userInfo");
-    const userName = document.getElementById("userName");
-    const userEmail = document.getElementById("userEmail");
-    const userPhoto = document.getElementById("userPhoto");
-    const testContainer = document.getElementById("testContainer");
-
-    loginBtn.onclick = () => {
+    // Google Sign In function
+    function signInWithGoogle() {
       const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider).catch(console.error);
-    };
+      auth.signInWithPopup(provider)
+        .then((result) => {
+          // User signed in
+          console.log("User signed in:", result.user);
+        })
+        .catch((error) => {
+          console.error("Error signing in:", error);
+          alert("Error signing in: " + error.message);
+        });
+    }
 
-    logoutBtn.onclick = () => auth.signOut();
+    // Sign Out function
+    function signOut() {
+      auth.signOut()
+        .then(() => {
+          console.log("User signed out");
+        })
+        .catch((error) => {
+          console.error("Error signing out:", error);
+        });
+    }
 
-    auth.onAuthStateChanged(user => {
+    // Listen for auth state changes
+    auth.onAuthStateChanged((user) => {
+      const loginContainer = document.getElementById('login-container');
+      const appContent = document.getElementById('app-content');
+      const userInfo = document.getElementById('user-info');
+
       if (user) {
-        loginBtn.style.display = "none";
-        logoutBtn.style.display = "inline-block";
-        userInfo.style.display = "block";
-        userName.textContent = `👋 Hello, ${user.displayName}`;
-        userEmail.textContent = user.email;
-        userPhoto.src = user.photoURL;
-        testContainer.style.display = "block";
+        // User is signed in
+        loginContainer.style.display = 'none';
+        appContent.style.display = 'block';
+        userInfo.style.display = 'block';
+        
+        // Display user info
+        document.getElementById('user-photo').src = user.photoURL || 'https://via.placeholder.com/40';
+        document.getElementById('user-name').textContent = user.displayName || user.email;
+        
+        // Load leaderboard data
         loadLeaderboard();
       } else {
-        loginBtn.style.display = "inline-block";
-        logoutBtn.style.display = "none";
-        userInfo.style.display = "none";
-        testContainer.style.display = "none";
+        // User is signed out
+        loginContainer.style.display = 'flex';
+        appContent.style.display = 'none';
+        userInfo.style.display = 'none';
       }
     });
 
-    function saveResultToFirestore() {
-      const user = auth.currentUser;
-      if (!user) return alert("Please login first");
+    // Tab functionality
+    document.querySelectorAll('.tab-button').forEach(button => {
+      button.addEventListener('click', () => {
+        // Remove active class from all buttons and content
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        
+        // Add active class to clicked button and corresponding content
+        button.classList.add('active');
+        const tabId = button.getAttribute('data-tab') + '-tab';
+        document.getElementById(tabId).classList.add('active');
+        
+        // Refresh leaderboard if leaderboard tab is selected
+        if (button.getAttribute('data-tab') === 'leaderboard') {
+          loadLeaderboard();
+        }
+      });
+    });
 
-      const score = Math.floor(Math.random() * 200) + 1;
-      const accuracy = (Math.random() * 100).toFixed(1);
-      const time = Math.floor(Math.random() * 60) + 1;
+    // Leaderboard filter functionality
+    document.getElementById('leaderboard-test-select').addEventListener('change', loadLeaderboard);
+    document.getElementById('leaderboard-speed-select').addEventListener('change', loadLeaderboard);
 
-      db.collection("submissions").add({
-        uid: user.uid,
-        name: user.displayName,
-        score: score,
-        accuracy: accuracy,
-        time: time,
-        createdAt: new Date()
-      }).then(() => {
-        alert("Result saved successfully!");
-        loadLeaderboard();
-      }).catch(console.error);
-    }
-
+    // Function to load leaderboard data
     function loadLeaderboard() {
-      db.collection("submissions")
-        .orderBy("score", "desc")
-        .limit(10)
-        .get()
-        .then(snapshot => {
-          const tbody = document.getElementById("leaderboardBody");
-          tbody.innerHTML = "";
-          snapshot.docs.forEach((doc, i) => {
-            const d = doc.data();
-            tbody.innerHTML += `
-              <tr>
-                <td>${i + 1}</td>
-                <td>${d.name}</td>
-                <td>${d.score}</td>
-                <td>${d.accuracy}%</td>
-                <td>${d.time} min</td>
-              </tr>
-            `;
-          });
+      const testSelect = document.getElementById('leaderboard-test-select');
+      const speedSelect = document.getElementById('leaderboard-speed-select');
+      const leaderboardEntries = document.getElementById('leaderboard-entries');
+      
+      leaderboardEntries.innerHTML = '<tr><td colspan="7" style="text-align: center;">Loading leaderboard...</td></tr>';
+      
+      let query = db.collection('submissions').orderBy('accuracy', 'desc').limit(50);
+      
+      if (testSelect.value !== 'all') {
+        query = query.where('testNumber', '==', parseInt(testSelect.value));
+      }
+      
+      if (speedSelect.value !== 'all') {
+        query = query.where('speed', '==', parseInt(speedSelect.value));
+      }
+      
+      query.get().then((querySnapshot) => {
+        if (querySnapshot.empty) {
+          leaderboardEntries.innerHTML = '<tr><td colspan="7" style="text-align: center;">No submissions found</td></tr>';
+          return;
+        }
+        
+        leaderboardEntries.innerHTML = '';
+        let rank = 1;
+        
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          const row = document.createElement('tr');
+          
+          // Add medal emoji for top 3
+          let rankDisplay = rank;
+          if (rank === 1) rankDisplay = '🥇';
+          else if (rank === 2) rankDisplay = '🥈';
+          else if (rank === 3) rankDisplay = '🥉';
+          
+          row.innerHTML = `
+            <td>${rankDisplay}</td>
+            <td><img src="${data.userPhoto || 'https://via.placeholder.com/30'}" width="30" height="30" style="border-radius: 50%; vertical-align: middle;"> ${data.userName}</td>
+            <td>Test ${data.testNumber}</td>
+            <td>${data.speed} WPM</td>
+            <td>${data.accuracy.toFixed(2)}%</td>
+            <td>${data.wpm}</td>
+            <td>${new Date(data.timestamp).toLocaleDateString()}</td>
+          `;
+          
+          leaderboardEntries.appendChild(row);
+          rank++;
         });
+      }).catch((error) => {
+        console.error("Error loading leaderboard:", error);
+        leaderboardEntries.innerHTML = '<tr><td colspan="7" style="text-align: center;">Error loading leaderboard</td></tr>';
+      });
     }
+
+    // Function to populate test select in leaderboard
+    function populateLeaderboardTestSelect() {
+      const select = document.getElementById('leaderboard-test-select');
+      
+      // Clear existing options except "All Tests"
+      while (select.options.length > 1) {
+        select.remove(1);
+      }
+      
+      // Add test options from 1 to 110
+      for (let i = 1; i <= 110; i++) {
+        const option = document.createElement('option');
+        option.value = i;
+        option.text = `Test ${i}`;
+        select.appendChild(option);
+      }
+    }
+
+    // Add event listeners
+    document.getElementById('googleSignIn').addEventListener('click', signInWithGoogle);
+    document.getElementById('signOut').addEventListener('click', signOut);
+
+    // Function to save submission to Firestore
+    function saveSubmission(testNumber, speed, accuracy, wpm, userName, userPhoto) {
+      db.collection('submissions').add({
+        testNumber: testNumber,
+        speed: speed,
+        accuracy: accuracy,
+        wpm: wpm,
+        userName: userName,
+        userPhoto: userPhoto,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        console.log("Submission saved successfully");
+        // Refresh leaderboard if it's currently visible
+        if (document.querySelector('.tab-button[data-tab="leaderboard"]').classList.contains('active')) {
+          loadLeaderboard();
+        }
+      }).catch((error) => {
+        console.error("Error saving submission:", error);
+      });
+    }
+
+    // Modified downloadPDF function to save submission
+    function downloadPDF() {
+      // Stop the timer when showing results
+      if (isTimerRunning) {
+        pauseTimer();
+      }
+      
+      // Disable timer controls
+      disableTimerControls();
+      
+      compareParagraphs();
+      
+      // Get current date and time
+      const currentDate = new Date();
+      const day = currentDate.getDate();
+      const monthIndex = currentDate.getMonth();
+      const year = currentDate.getFullYear();
+      const hours = currentDate.getHours();
+      const currentMinutes = currentDate.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const formattedHours = hours % 12 || 12;
+      const formattedMinutes = currentMinutes < 10 ? '0' + currentMinutes : currentMinutes;
+
+      const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+
+      const formattedDate = `${day} ${monthNames[monthIndex]} ${year},`;
+      const formattedTime = `${formattedHours}:${formattedMinutes} ${ampm}`;
+
+      const headerContent = `
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h2 style="color: #4361ee;">Steno Warriors Result Sheet</h2>
+          <div style="margin-top: 10px;">
+            Test Date & Time: ${formattedDate} ${formattedTime}
+          </div>
+        </div>
+      `;
+
+      const headerText = document.createElement('div');
+      headerText.innerHTML = headerContent;
+      headerText.style.textAlign = 'center';
+
+      const textBoxC = document.getElementById('textBoxC');
+      textBoxC.insertBefore(headerText, textBoxC.firstChild);
+      
+      // Add download button
+      const downloadBtn = document.createElement('button');
+      downloadBtn.textContent = 'Download PDF';
+      downloadBtn.className = 'download-btn';
+      downloadBtn.onclick = function() {
+        generatePDF();
+        // Re-enable controls after PDF generation
+        enableTimerControls();
+      };
+      
+      // Add close button
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = 'Close Results';
+      closeBtn.className = 'download-btn';
+      closeBtn.style.marginLeft = '10px';
+      closeBtn.onclick = function() {
+        location.reload(); // Refreshes the page
+      };
+      
+      textBoxC.appendChild(downloadBtn);
+      textBoxC.appendChild(closeBtn);
+      textBoxC.style.display = 'block';
+
+      // Save submission to leaderboard
+      const user = auth.currentUser;
+      if (user) {
+        const testNumber = parseInt(document.getElementById('test-select').value);
+        const speed = parseInt(document.getElementById('speed-select').value);
+        const accuracy = parseFloat(document.querySelector('#textBoxC table tr:last-child td:nth-child(7)').textContent.replace('%', ''));
+        const wpm = parseInt(document.querySelector('#textBoxC table tr:last-child td:nth-child(6)').textContent);
+        
+        saveSubmission(
+          testNumber,
+          speed,
+          accuracy,
+          wpm,
+          user.displayName || user.email,
+          user.photoURL
+        );
+      }
+    }
+
+    // Rest of your existing JavaScript code...
+    // [All your existing timer and test selection code remains the same]
   </script>
 </body>
 </html>
