@@ -8,9 +8,11 @@
   <script src="textLookup.js"></script>
   <script src="1c2.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
   <div class="header">
@@ -69,7 +71,24 @@
       <div id="paragraphA"></div>
       <textarea class="inputBox" id="paragraphB" spellcheck="false" placeholder="Click Start to begin typing" disabled></textarea>
       <div class="resultText" id="textBoxC" style="display: none;"></div>
-      <button onclick="downloadPDF()" class="download-btn">Show Result</button>
+      <button onclick="saveResult()" class="download-btn">Submit & Show Result</button>
+
+      <!-- 🏆 Leaderboard -->
+      <div class="leaderboard">
+        <h2>🏆 Leaderboard</h2>
+        <table id="leaderboardTable" class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Name</th>
+              <th>Score</th>
+              <th>Accuracy</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
 
     <div class="footer">
@@ -79,7 +98,7 @@
     </div>
   </div>
 
-  <!-- Auth & UI Control -->
+  <!-- 🔐 Auth + Firestore Logic -->
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBjY-pE5jxQJgKqDZrcE7Im66_5r-X_mRA",
@@ -93,6 +112,7 @@
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
+    const db = firebase.firestore();
 
     const loginBtn = document.getElementById("loginBtn");
     const logoutBtn = document.getElementById("logoutBtn");
@@ -118,6 +138,7 @@
         userEmail.textContent = user.email;
         userPhoto.src = user.photoURL;
         testContainer.style.display = "block";
+        loadLeaderboard();
       } else {
         loginBtn.style.display = "inline-block";
         logoutBtn.style.display = "none";
@@ -125,6 +146,48 @@
         testContainer.style.display = "none";
       }
     });
+
+    function saveResult() {
+      const user = auth.currentUser;
+      if (!user) return alert("Please login first.");
+
+      const score = Math.floor(Math.random() * 200) + 1;
+      const accuracy = (Math.random() * 100).toFixed(1);
+      const timeTaken = Math.floor(Math.random() * 60) + 1;
+
+      db.collection("submissions").add({
+        uid: user.uid,
+        name: user.displayName,
+        score,
+        accuracy,
+        time: timeTaken,
+        createdAt: new Date()
+      }).then(() => {
+        alert("Result saved!");
+        loadLeaderboard();
+      });
+    }
+
+    function loadLeaderboard() {
+      db.collection("submissions")
+        .orderBy("score", "desc")
+        .limit(10)
+        .get()
+        .then(snapshot => {
+          const tbody = document.querySelector("#leaderboardTable tbody");
+          tbody.innerHTML = "";
+          snapshot.docs.forEach((doc, index) => {
+            const d = doc.data();
+            tbody.innerHTML += `<tr>
+              <td>${index + 1}</td>
+              <td>${d.name}</td>
+              <td>${d.score}</td>
+              <td>${d.accuracy}%</td>
+              <td>${d.time} min</td>
+            </tr>`;
+          });
+        });
+    }
   </script>
 
   <!-- Optional: PDF Export -->
