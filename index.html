@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Google Login Demo</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #f3f4f6;
+      color: #111;
+      padding: 30px;
+      text-align: center;
+    }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      display: inline-block;
+    }
+    #userProfile img {
+      width: 80px;
+      border-radius: 50%;
+      margin-top: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      margin: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🔐 Google Login Demo</h1>
+
+  <div class="card">
+    <div id="userProfile">
+      <p id="userName"></p>
+      <p id="userEmail"></p>
+      <img id="userPhoto" src="" alt="" style="display:none;" />
+    </div>
+    <button id="loginBtn">Sign in with Google</button>
+    <button id="logoutBtn" style="display:none;">Logout</button>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.10.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    // ✅ Replace with your actual Firebase project config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjY-pE5jxQJgKqDZrcE7Im66_5r-X_mRA",
+      authDomain: "setup-login-page.firebaseapp.com",
+      projectId: "setup-login-page",
+      storageBucket: "setup-login-page.appspot.com",
+      messagingSenderId: "341251531099",
+      appId: "1:341251531099:web:f4263621455541ffdc3a7e",
+      measurementId: "G-ZXFC7NR9HV"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const userName = document.getElementById("userName");
+    const userEmail = document.getElementById("userEmail");
+    const userPhoto = document.getElementById("userPhoto");
+
+    loginBtn.onclick = () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider)
+        .then(result => {
+          const user = result.user;
+          showUser(user);
+          db.collection("users").doc(user.uid).set({
+            name: user.displayName,
+            email: user.email,
+            photo: user.photoURL,
+            lastLogin: new Date()
+          });
+        })
+        .catch(err => {
+          alert("Login error: " + err.message);
+          console.error(err);
+        });
+    };
+
+    logoutBtn.onclick = () => {
+      auth.signOut();
+    };
+
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        showUser(user);
+      } else {
+        hideUser();
+      }
+    });
+
+    function showUser(user) {
+      userName.textContent = "👋 Hello, " + user.displayName;
+      userEmail.textContent = user.email;
+      userPhoto.src = user.photoURL;
+      userPhoto.style.display = "block";
+      loginBtn.style.display = "none";
+      logoutBtn.style.display = "inline-block";
+    }
+
+    function hideUser() {
+      userName.textContent = "";
+      userEmail.textContent = "";
+      userPhoto.src = "";
+      userPhoto.style.display = "none";
+      loginBtn.style.display = "inline-block";
+      logoutBtn.style.display = "none";
+    }
+  </script>
+</body>
+</html>
