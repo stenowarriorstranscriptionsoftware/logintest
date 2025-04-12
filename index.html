@@ -1,448 +1,186 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+  <meta charset="utf-8" />
   <title>Steno Warriors Transcription Software</title>
-  <!-- Add Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+  <link rel="stylesheet" href="styles.css">
   <script src="lookup.js"></script>
   <script src="textLookup.js"></script>
   <script src="1c2.js"></script>
-  <link rel="stylesheet" href="styles.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com/">
-  <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
 </head>
-
 <body>
-  <!-- Add login container at the top -->
-  <div id="login-container" class="login-container">
-    <div class="login-content">
-      <h2>Welcome to Steno Warriors</h2>
-      <p>Please sign in with Google to access the transcription tests</p>
-      <button id="googleSignIn" class="google-signin-btn">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google logo">
-        Sign in with Google
-      </button>
-    </div>
-  </div>
-
   <div class="header">
     <h1>Steno Warriors Transcription Software</h1>
-    <div id="user-info" style="display: none;">
-      <img id="user-photo" width="40" height="40" style="border-radius: 50%; vertical-align: middle;">
-      <span id="user-name" style="margin: 0 10px;"></span>
-      <button id="signOut" class="sign-out-btn">Sign Out</button>
-    </div>
   </div>
 
-  <div class="main" id="app-content" style="display: none;">
-    <h2>Please select a Test</h2>
-    <div class="select-panel">
-      <select id="volume-select">
-        <option value="1">Test 1-22</option>
-        <option value="2">Test 23-44</option>
-        <option value="3">Test 45-66</option>
-        <option value="4">Test 67-88</option>
-        <option value="5">Test 89-110</option>
-      </select>
-
-      <select id="test-select">
-      </select>
-    
-      <select id="speed-select">
-        <option value="70">70 WPM</option>
-        <option value="75">75 WPM</option>
-        <option value="80">80 WPM</option>
-        <option value="85">85 WPM</option>
-        <option value="90">90 WPM</option>
-        <option value="95">95 WPM</option>
-        <option value="100">100 WPM</option>
-      </select>
-    </div>
-    <div id="video-container"></div>
-
-    <div class="timer-container">
-      Typing timer: <span id="timer">50:00</span>
-      <div class="timer-controls">
-        <label><input type="radio" name="duration" value="2400"> 40 min</label>
-        <label><input type="radio" name="duration" value="3000" checked> 50 min</label>
-        <button id="startPause" class="tmrBtn">Start</button>
-        <button id="reset" class="tmrBtn">Reset</button>
+  <!-- Login Section -->
+  <div class="main">
+    <h2>👤 Login</h2>
+    <div style="margin-bottom: 20px;">
+      <button id="loginBtn">Sign in with Google</button>
+      <button id="logoutBtn" style="display:none;">Logout</button>
+      <div id="userInfo" style="margin-top:10px; display:none;">
+        <p id="userName"></p>
+        <p id="userEmail"></p>
+        <img id="userPhoto" src="" style="width:50px; border-radius:50%;" />
       </div>
     </div>
-    
-    <div id="paragraphA"></div>
-    <textarea class="inputBox" id="paragraphB" spellcheck="false" placeholder="Click Start to begin typing" disabled></textarea>
-    <div class="resultText" id="textBoxC" style="display: none;"></div>
-    <button onclick="downloadPDF()" class="download-btn">Show Result</button>
   </div>
 
-  <div class="footer">
-    <div>
-      Made with <span style="color: red;">&hearts;</span> &middot; Anish &middot; <a href=""> Contact </a>
+  <!-- Test + Leaderboard (Hidden until login) -->
+  <div id="testContainer" style="display: none;">
+    <div class="main">
+      <h2>Select a Test</h2>
+      <div class="select-panel">
+        <select id="volume-select">
+          <option value="1">Test 1-22</option>
+          <option value="2">Test 23-44</option>
+          <option value="3">Test 45-66</option>
+          <option value="4">Test 67-88</option>
+          <option value="5">Test 89-110</option>
+        </select>
+        <select id="test-select"></select>
+        <select id="speed-select">
+          <option value="70">70 WPM</option>
+          <option value="75">75 WPM</option>
+          <option value="80">80 WPM</option>
+          <option value="85">85 WPM</option>
+          <option value="90">90 WPM</option>
+          <option value="95">95 WPM</option>
+          <option value="100">100 WPM</option>
+        </select>
+      </div>
+
+      <div id="video-container"></div>
+      <div class="timer-container">
+        Typing timer: <span id="timer">50:00</span>
+        <div class="timer-controls">
+          <label><input type="radio" name="duration" value="2400"> 40 min</label>
+          <label><input type="radio" name="duration" value="3000" checked> 50 min</label>
+          <button id="startPause" class="tmrBtn">Start</button>
+          <button id="reset" class="tmrBtn">Reset</button>
+        </div>
+      </div>
+
+      <div id="paragraphA"></div>
+      <textarea class="inputBox" id="paragraphB" spellcheck="false" placeholder="Click Start to begin typing" disabled></textarea>
+      <div class="resultText" id="textBoxC" style="display: none;"></div>
+      <button onclick="saveResultToFirestore()" class="download-btn">Submit & Save Result</button>
+
+      <!-- Leaderboard -->
+      <div class="main" style="margin-top: 50px;">
+        <h2>🏆 Leaderboard</h2>
+        <table style="width:100%; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Name</th>
+              <th>Score</th>
+              <th>Accuracy</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <!-- Add these scripts before your main script -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
   <script>
-    // Initialize Firebase with your config
     const firebaseConfig = {
       apiKey: "AIzaSyBjY-pE5jxQJgKqDZrcE7Im66_5r-X_mRA",
       authDomain: "setup-login-page.firebaseapp.com",
       projectId: "setup-login-page",
       storageBucket: "setup-login-page.appspot.com",
       messagingSenderId: "341251531099",
-      appId: "1:341251531099:web:f4263621455541ffdc3a7e",
-      measurementId: "G-ZXFC7NR9HV"
+      appId: "1:341251531099:web:f4263621455541ffdc3a7e"
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
+    const db = firebase.firestore();
 
-    // Google Sign In function
-    function signInWithGoogle() {
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const userInfo = document.getElementById("userInfo");
+    const userName = document.getElementById("userName");
+    const userEmail = document.getElementById("userEmail");
+    const userPhoto = document.getElementById("userPhoto");
+    const testContainer = document.getElementById("testContainer");
+
+    loginBtn.onclick = () => {
       const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider)
-        .then((result) => {
-          // User signed in
-          console.log("User signed in:", result.user);
-        })
-        .catch((error) => {
-          console.error("Error signing in:", error);
-          alert("Error signing in: " + error.message);
-        });
-    }
-
-    // Sign Out function
-    function signOut() {
-      auth.signOut()
-        .then(() => {
-          console.log("User signed out");
-        })
-        .catch((error) => {
-          console.error("Error signing out:", error);
-        });
-    }
-
-    // Listen for auth state changes
-    auth.onAuthStateChanged((user) => {
-      const loginContainer = document.getElementById('login-container');
-      const appContent = document.getElementById('app-content');
-      const userInfo = document.getElementById('user-info');
-
-      if (user) {
-        // User is signed in
-        loginContainer.style.display = 'none';
-        appContent.style.display = 'block';
-        userInfo.style.display = 'block';
-        
-        // Display user info
-        document.getElementById('user-photo').src = user.photoURL || 'https://via.placeholder.com/40';
-        document.getElementById('user-name').textContent = user.displayName || user.email;
-      } else {
-        // User is signed out
-        loginContainer.style.display = 'flex';
-        appContent.style.display = 'none';
-        userInfo.style.display = 'none';
-      }
-    });
-
-    // Add event listeners
-    document.getElementById('googleSignIn').addEventListener('click', signInWithGoogle);
-    document.getElementById('signOut').addEventListener('click', signOut);
-
-    // Timer functionality
-    let timerDisplay = document.getElementById('timer');
-    let startPauseButton = document.getElementById('startPause');
-    let resetButton = document.getElementById('reset');
-    let paragraphB = document.getElementById('paragraphB');
-    let timerInterval;
-    let timeLeft = 3000; // 50 minutes in seconds (50 * 60)
-    let isTimerRunning = false;
-    let startTimeStamp;
-    let pausedTime = 0;
-    let selectedDuration = 3000; // Default to 50 minutes
-
-    // Format time as MM:SS
-    function formatTime(seconds) {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-    }
-
-    function updateTimerDisplay() {
-        timerDisplay.textContent = formatTime(timeLeft);
-    }
-
-    function startTimer() {
-        if (!isTimerRunning) {
-            isTimerRunning = true;
-            startPauseButton.textContent = 'Pause';
-            paragraphB.disabled = false;
-            paragraphB.placeholder = "Start typing here...";
-            paragraphB.focus();
-            
-            // Record start time (adjusted for paused time)
-            startTimeStamp = Date.now() - pausedTime * 1000;
-            pausedTime = 0;
-            
-            timerInterval = setInterval(() => {
-                const elapsedSeconds = Math.floor((Date.now() - startTimeStamp) / 1000);
-                timeLeft = Math.max(0, selectedDuration - elapsedSeconds);
-                
-                updateTimerDisplay();
-                
-                if (timeLeft <= 0) {
-                    clearInterval(timerInterval);
-                    isTimerRunning = false;
-                    startPauseButton.textContent = 'Start';
-                    paragraphB.disabled = true;
-                    compareParagraphs(); // Auto-submit when time runs out
-                }
-            }, 200); // Update more frequently for smoother countdown
-        }
-    }
-
-    function pauseTimer() {
-        if (isTimerRunning) {
-            clearInterval(timerInterval);
-            isTimerRunning = false;
-            startPauseButton.textContent = 'Start';
-            paragraphB.disabled = true;
-            paragraphB.placeholder = "Timer paused - click Start to continue";
-            
-            // Calculate how much time was spent in this session
-            const elapsedSeconds = Math.floor((Date.now() - startTimeStamp) / 1000);
-            pausedTime = selectedDuration - (timeLeft - elapsedSeconds);
-        }
-    }
-
-    function resetTimer() {
-        clearInterval(timerInterval);
-        isTimerRunning = false;
-        startPauseButton.textContent = 'Start';
-        paragraphB.disabled = true;
-        paragraphB.value = '';
-        paragraphB.placeholder = "Click Start to begin typing";
-        
-        // Reset to selected duration
-        timeLeft = selectedDuration;
-        pausedTime = 0;
-        updateTimerDisplay();
-    }
-
-    function disableTimerControls() {
-        startPauseButton.disabled = true;
-        resetButton.disabled = true;
-        document.querySelectorAll('input[name="duration"]').forEach(radio => {
-            radio.disabled = true;
-        });
-    }
-
-    function enableTimerControls() {
-        startPauseButton.disabled = false;
-        resetButton.disabled = false;
-        document.querySelectorAll('input[name="duration"]').forEach(radio => {
-            radio.disabled = false;
-        });
-    }
-
-    // Event listeners
-    startPauseButton.addEventListener('click', () => {
-        if (isTimerRunning) {
-            pauseTimer();
-        } else {
-            startTimer();
-        }
-    });
-
-    resetButton.addEventListener('click', resetTimer);
-
-    // Duration radio buttons
-    document.querySelectorAll('input[name="duration"]').forEach(radio => {
-        radio.addEventListener('change', function() {
-            if (!isTimerRunning) {
-                selectedDuration = parseInt(this.value);
-                timeLeft = selectedDuration;
-                updateTimerDisplay();
-            }
-        });
-    });
-
-    // Initialize timer display
-    updateTimerDisplay();
-
-    // Test selection functionality
-    const volumeSelect = document.getElementById('volume-select');
-    const testSelect = document.getElementById('test-select');
-    const speedSelect = document.getElementById('speed-select');
-    const videoContainer = document.getElementById('video-container');
-
-    const tests = {
-      1: Array.from({ length: 22 }, (_, i) => `${i + 1}`),
-      2: Array.from({ length: 22 }, (_, i) => `${i + 23}`),
-      3: Array.from({ length: 22 }, (_, i) => `${i + 45}`),
-      4: Array.from({ length: 22 }, (_, i) => `${i + 67}`), 
-      5: Array.from({ length: 22 }, (_, i) => `${i + 89}`),
+      auth.signInWithPopup(provider).catch(console.error);
     };
 
-    function populateTests(volume) {
-      testSelect.innerHTML = '';
-      const options = tests[volume];
-      options.forEach(test => {
-        const option = document.createElement('option');
-        option.value = test;
-        option.text = "Test " + test.toString();
-        testSelect.appendChild(option);
-      });
-    }
+    logoutBtn.onclick = () => auth.signOut();
 
-    function updateVideo() {
-      const spd = document.getElementById('speed-select').value;
-      const tst = document.getElementById('test-select').value;
-
-      videoUrl = urlLookup[parseInt(tst, 10)][parseInt(spd, 10)];
-      paragraphA.value = textTable[parseInt(tst, 10)];
-      paragraphB.placeholder = "Click Start to begin typing";
-      videoContainer.innerHTML = `<iframe src="${videoUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`;
-    }
-
-    volumeSelect.addEventListener('change', () => {
-      populateTests(volumeSelect.value);
-      updateVideo();
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        loginBtn.style.display = "none";
+        logoutBtn.style.display = "inline-block";
+        userInfo.style.display = "block";
+        userName.textContent = `👋 Hello, ${user.displayName}`;
+        userEmail.textContent = user.email;
+        userPhoto.src = user.photoURL;
+        testContainer.style.display = "block";
+        loadLeaderboard();
+      } else {
+        loginBtn.style.display = "inline-block";
+        logoutBtn.style.display = "none";
+        userInfo.style.display = "none";
+        testContainer.style.display = "none";
+      }
     });
 
-    testSelect.addEventListener('change', updateVideo);
-    speedSelect.addEventListener('change', updateVideo);
+    function saveResultToFirestore() {
+      const user = auth.currentUser;
+      if (!user) return alert("Please login first");
 
-    // Initialize on load
-    populateTests(volumeSelect.value);
-    updateVideo();
+      const score = Math.floor(Math.random() * 200) + 1;
+      const accuracy = (Math.random() * 100).toFixed(1);
+      const time = Math.floor(Math.random() * 60) + 1;
 
-    // Enhanced PDF download function
-    function downloadPDF() {
-      // Stop the timer when showing results
-      if (isTimerRunning) {
-        pauseTimer();
-      }
-      
-      // Disable timer controls
-      disableTimerControls();
-      
-      compareParagraphs();
-      
-      // Get current date and time
-      const currentDate = new Date();
-      const day = currentDate.getDate();
-      const monthIndex = currentDate.getMonth();
-      const year = currentDate.getFullYear();
-      const hours = currentDate.getHours();
-      const currentMinutes = currentDate.getMinutes();
-      const ampm = hours >= 12 ? 'PM' : 'AM';
-      const formattedHours = hours % 12 || 12;
-      const formattedMinutes = currentMinutes < 10 ? '0' + currentMinutes : currentMinutes;
-
-      const monthNames = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-      ];
-
-      const formattedDate = `${day} ${monthNames[monthIndex]} ${year},`;
-      const formattedTime = `${formattedHours}:${formattedMinutes} ${ampm}`;
-
-      const headerContent = `
-        <div style="text-align: center; margin-bottom: 20px;">
-          <h2 style="color: #4361ee;">Steno Warriors Result Sheet</h2>
-          <div style="margin-top: 10px;">
-            Test Date & Time: ${formattedDate} ${formattedTime}
-          </div>
-        </div>
-      `;
-
-      const headerText = document.createElement('div');
-      headerText.innerHTML = headerContent;
-      headerText.style.textAlign = 'center';
-
-      const textBoxC = document.getElementById('textBoxC');
-      textBoxC.insertBefore(headerText, textBoxC.firstChild);
-      
-      // Add download button
-      const downloadBtn = document.createElement('button');
-      downloadBtn.textContent = 'Download PDF';
-      downloadBtn.className = 'download-btn';
-      downloadBtn.onclick = function() {
-        generatePDF();
-        // Re-enable controls after PDF generation
-        enableTimerControls();
-      };
-      
-      // Add close button
-      const closeBtn = document.createElement('button');
-      closeBtn.textContent = 'Close Results';
-      closeBtn.className = 'download-btn';
-      closeBtn.style.marginLeft = '10px';
-      closeBtn.onclick = function() {
-        location.reload(); // Refreshes the page
-      };
-      
-      textBoxC.appendChild(downloadBtn);
-      textBoxC.appendChild(closeBtn);
-      textBoxC.style.display = 'block';
+      db.collection("submissions").add({
+        uid: user.uid,
+        name: user.displayName,
+        score: score,
+        accuracy: accuracy,
+        time: time,
+        createdAt: new Date()
+      }).then(() => {
+        alert("Result saved successfully!");
+        loadLeaderboard();
+      }).catch(console.error);
     }
 
-    function generatePDF() {
-      const { jsPDF } = window.jspdf;
-      const element = document.getElementById('textBoxC');
-      
-      // Temporarily hide the buttons to avoid including them in the PDF
-      const buttons = element.querySelectorAll('button');
-      buttons.forEach(btn => {
-        btn.style.display = 'none';
-      });
-      
-      // Add some padding for better appearance in PDF
-      const originalPadding = element.style.padding;
-      element.style.padding = '20px';
-      
-      html2canvas(element, {
-        scale: 2, // Higher quality
-        logging: false,
-        useCORS: true,
-        allowTaint: true
-      }).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgWidth = 210; // A4 width in mm
-        const pageHeight = 295; // A4 height in mm
-        const imgHeight = canvas.height * imgWidth / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
-
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-
-        while (heightLeft >= 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
-
-        // Restore the button visibility and original padding
-        buttons.forEach(btn => {
-          btn.style.display = 'block';
+    function loadLeaderboard() {
+      db.collection("submissions")
+        .orderBy("score", "desc")
+        .limit(10)
+        .get()
+        .then(snapshot => {
+          const tbody = document.getElementById("leaderboardBody");
+          tbody.innerHTML = "";
+          snapshot.docs.forEach((doc, i) => {
+            const d = doc.data();
+            tbody.innerHTML += `
+              <tr>
+                <td>${i + 1}</td>
+                <td>${d.name}</td>
+                <td>${d.score}</td>
+                <td>${d.accuracy}%</td>
+                <td>${d.time} min</td>
+              </tr>
+            `;
+          });
         });
-        element.style.padding = originalPadding;
-        
-        pdf.save('StenoWarriors_Result.pdf');
-      });
     }
   </script>
 </body>
