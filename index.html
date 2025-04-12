@@ -3,27 +3,22 @@
 <head>
   <meta http-equiv="content-type" content="text/html;charset=utf-8" />
   <title>Steno Warriors Transcription Software</title>
-
-  <!-- Firebase SDKs -->
+  <!-- Add Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
-
-  <!-- Local Scripts -->
   <script src="lookup.js"></script>
   <script src="textLookup.js"></script>
   <script src="1c2.js"></script>
-
-  <!-- Styles -->
   <link rel="stylesheet" href="styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com/">
   <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Exo+2&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
 <body>
-  <!-- Login UI -->
+  <!-- Login Container -->
   <div id="login-container" class="login-container">
     <div class="login-content">
       <h2>Welcome to Steno Warriors</h2>
@@ -35,7 +30,6 @@
     </div>
   </div>
 
-  <!-- Header -->
   <div class="header">
     <h1>Steno Warriors Transcription Software</h1>
     <div id="user-info" style="display: none;">
@@ -45,14 +39,13 @@
     </div>
   </div>
 
-  <!-- App Content -->
   <div class="main" id="app-content" style="display: none;">
     <div class="app-tabs">
       <button class="tab-button active" data-tab="test">Take Test</button>
       <button class="tab-button" data-tab="leaderboard">🏆 Leaderboard</button>
     </div>
 
-    <!-- Test Tab -->
+    <!-- Test Tab Content -->
     <div id="test-tab" class="tab-content active">
       <h2>Please select a Test</h2>
       <div class="select-panel">
@@ -65,7 +58,7 @@
         </select>
 
         <select id="test-select"></select>
-
+      
         <select id="speed-select">
           <option value="70">70 WPM</option>
           <option value="75">75 WPM</option>
@@ -76,7 +69,6 @@
           <option value="100">100 WPM</option>
         </select>
       </div>
-
       <div id="video-container"></div>
 
       <div class="timer-container">
@@ -88,14 +80,14 @@
           <button id="reset" class="tmrBtn">Reset</button>
         </div>
       </div>
-
+      
       <div id="paragraphA"></div>
       <textarea class="inputBox" id="paragraphB" spellcheck="false" placeholder="Click Start to begin typing" disabled></textarea>
       <div class="resultText" id="textBoxC" style="display: none;"></div>
       <button onclick="downloadPDF()" class="download-btn">Show Result</button>
     </div>
 
-    <!-- Leaderboard Tab -->
+    <!-- Leaderboard Tab Content -->
     <div id="leaderboard-tab" class="tab-content">
       <h2>🏆 Leaderboard</h2>
       <div class="leaderboard-controls">
@@ -134,19 +126,18 @@
     </div>
   </div>
 
-  <!-- Footer -->
   <div class="footer">
     <div>
-      Made with <span style="color: red;">&hearts;</span> &middot; Anish &middot; <a href="#">Contact</a>
+      Made with <span style="color: red;">&hearts;</span> &middot; Anish &middot; <a href=""> Contact </a>
     </div>
   </div>
 
-  <!-- Extras -->
+  <!-- External Scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-  <!-- Firebase Config and App Logic -->
   <script>
+    // Firebase Configuration
     const firebaseConfig = {
       apiKey: "AIzaSyBjY-pE5jxQJgKqDZrcE7Im66_5r-X_mRA",
       authDomain: "setup-login-page.firebaseapp.com",
@@ -156,88 +147,411 @@
       appId: "1:341251531099:web:f4263621455541ffdc3a7e",
       measurementId: "G-ZXFC7NR9HV"
     };
+
+    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    document.getElementById("googleSignIn").onclick = () => {
+    // DOM Elements
+    const paragraphA = document.getElementById('paragraphA');
+    const paragraphB = document.getElementById('paragraphB');
+    const videoContainer = document.getElementById('video-container');
+    const volumeSelect = document.getElementById('volume-select');
+    const testSelect = document.getElementById('test-select');
+    const speedSelect = document.getElementById('speed-select');
+
+    // Test data structure
+    const tests = {
+      1: Array.from({ length: 22 }, (_, i) => `${i + 1}`),
+      2: Array.from({ length: 22 }, (_, i) => `${i + 23}`),
+      3: Array.from({ length: 22 }, (_, i) => `${i + 45}`),
+      4: Array.from({ length: 22 }, (_, i) => `${i + 67}`), 
+      5: Array.from({ length: 22 }, (_, i) => `${i + 89}`)
+    };
+
+    // Initialize test selection
+    function populateTests(volume) {
+      testSelect.innerHTML = '';
+      const options = tests[volume];
+      options.forEach(test => {
+        const option = document.createElement('option');
+        option.value = test;
+        option.text = "Test " + test;
+        testSelect.appendChild(option);
+      });
+      updateVideo();
+    }
+
+    // Update video and text content
+    function updateVideo() {
+      const spd = speedSelect.value;
+      const tst = testSelect.value;
+      
+      if (urlLookup[tst] && urlLookup[tst][spd]) {
+        videoContainer.innerHTML = `
+          <iframe src="${urlLookup[tst][spd]}" 
+                  title="YouTube video player" 
+                  frameborder="0" 
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                  allowfullscreen></iframe>
+        `;
+      } else {
+        videoContainer.innerHTML = '<p>Video not available for this test/speed combination</p>';
+      }
+      
+      if (textTable[tst]) {
+        paragraphA.textContent = textTable[tst];
+      } else {
+        paragraphA.textContent = 'Text content not available for this test';
+      }
+      
+      paragraphB.placeholder = "Click Start to begin typing";
+    }
+
+    // Authentication Functions
+    function signInWithGoogle() {
       const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider);
-    };
+      auth.signInWithPopup(provider).catch(error => {
+        console.error("Error signing in:", error);
+        alert("Error signing in: " + error.message);
+      });
+    }
 
-    document.getElementById("signOut").onclick = () => {
-      auth.signOut();
-    };
+    function signOut() {
+      auth.signOut().catch(error => {
+        console.error("Error signing out:", error);
+      });
+    }
 
+    // Auth State Listener
     auth.onAuthStateChanged((user) => {
-      document.getElementById('login-container').style.display = user ? 'none' : 'flex';
-      document.getElementById('app-content').style.display = user ? 'block' : 'none';
-      document.getElementById('user-info').style.display = user ? 'flex' : 'none';
+      const loginContainer = document.getElementById('login-container');
+      const appContent = document.getElementById('app-content');
+      const userInfo = document.getElementById('user-info');
 
       if (user) {
-        document.getElementById('user-photo').src = user.photoURL || '';
+        loginContainer.style.display = 'none';
+        appContent.style.display = 'block';
+        userInfo.style.display = 'block';
+        
+        document.getElementById('user-photo').src = user.photoURL || 'https://via.placeholder.com/40';
         document.getElementById('user-name').textContent = user.displayName || user.email;
+        
         populateLeaderboardTestSelect();
         loadLeaderboard();
+      } else {
+        loginContainer.style.display = 'flex';
+        appContent.style.display = 'none';
+        userInfo.style.display = 'none';
       }
     });
 
-    // Tab Switching
+    // Tab Functionality
     document.querySelectorAll('.tab-button').forEach(button => {
       button.addEventListener('click', () => {
         document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+        
         button.classList.add('active');
-        document.getElementById(button.dataset.tab + '-tab').classList.add('active');
-        if (button.dataset.tab === 'leaderboard') loadLeaderboard();
+        const tabId = button.getAttribute('data-tab') + '-tab';
+        document.getElementById(tabId).classList.add('active');
+        
+        if (button.getAttribute('data-tab') === 'leaderboard') {
+          loadLeaderboard();
+        }
       });
     });
 
-    // Populate Test List Based on Volume
-    const testSelect = document.getElementById('test-select');
-    const volumeSelect = document.getElementById('volume-select');
-    const volumeRanges = {
-      1: [1, 22], 2: [23, 44], 3: [45, 66],
-      4: [67, 88], 5: [89, 110]
-    };
-
-    volumeSelect.addEventListener('change', function () {
-      const [start, end] = volumeRanges[this.value];
-      testSelect.innerHTML = '';
-      for (let i = start; i <= end; i++) {
-        const opt = document.createElement('option');
-        opt.value = i;
-        opt.textContent = `Test ${i}`;
-        testSelect.appendChild(opt);
+    // Leaderboard Functions
+    function populateLeaderboardTestSelect() {
+      const select = document.getElementById('leaderboard-test-select');
+      
+      while (select.options.length > 1) {
+        select.remove(1);
       }
-      testSelect.dispatchEvent(new Event('change'));
-    });
-
-    testSelect.addEventListener('change', function () {
-      const testNumber = parseInt(this.value);
-      const speed = parseInt(document.getElementById('speed-select').value);
-      const videoUrl = urlLookup[testNumber]?.[speed];
-      const videoContainer = document.getElementById('video-container');
-      const paragraphBox = document.getElementById('paragraphA');
-      document.getElementById('paragraphB').value = '';
-      document.getElementById('paragraphB').disabled = false;
-
-      if (videoUrl) {
-        videoContainer.innerHTML = `<iframe src="${videoUrl}" allowfullscreen></iframe>`;
-      } else {
-        videoContainer.innerHTML = '<p style="color:red">Video not found for this test/speed.</p>';
+      
+      for (let i = 1; i <= 110; i++) {
+        const option = document.createElement('option');
+        option.value = i;
+        option.text = `Test ${i}`;
+        select.appendChild(option);
       }
+    }
 
-      const para = textTable[testNumber];
-      paragraphBox.textContent = para || 'Text not available.';
+    function loadLeaderboard() {
+      const testSelect = document.getElementById('leaderboard-test-select');
+      const speedSelect = document.getElementById('leaderboard-speed-select');
+      const leaderboardEntries = document.getElementById('leaderboard-entries');
+      
+      leaderboardEntries.innerHTML = '<tr><td colspan="7" style="text-align: center;">Loading leaderboard...</td></tr>';
+      
+      let query = db.collection('submissions').orderBy('accuracy', 'desc').limit(50);
+      
+      if (testSelect.value !== 'all') {
+        query = query.where('testNumber', '==', parseInt(testSelect.value));
+      }
+      
+      if (speedSelect.value !== 'all') {
+        query = query.where('speed', '==', parseInt(speedSelect.value));
+      }
+      
+      query.get().then((querySnapshot) => {
+        if (querySnapshot.empty) {
+          leaderboardEntries.innerHTML = '<tr><td colspan="7" style="text-align: center;">No submissions found</td></tr>';
+          return;
+        }
+        
+        leaderboardEntries.innerHTML = '';
+        let rank = 1;
+        
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          const row = document.createElement('tr');
+          
+          let rankDisplay = rank;
+          if (rank === 1) rankDisplay = '🥇';
+          else if (rank === 2) rankDisplay = '🥈';
+          else if (rank === 3) rankDisplay = '🥉';
+          
+          row.innerHTML = `
+            <td>${rankDisplay}</td>
+            <td><img src="${data.userPhoto || 'https://via.placeholder.com/30'}" width="30" height="30" style="border-radius: 50%; vertical-align: middle;"> ${data.userName}</td>
+            <td>Test ${data.testNumber}</td>
+            <td>${data.speed} WPM</td>
+            <td>${data.accuracy.toFixed(2)}%</td>
+            <td>${data.wpm}</td>
+            <td>${new Date(data.timestamp?.toDate()).toLocaleDateString()}</td>
+          `;
+          
+          leaderboardEntries.appendChild(row);
+          rank++;
+        });
+      }).catch((error) => {
+        console.error("Error loading leaderboard:", error);
+        leaderboardEntries.innerHTML = '<tr><td colspan="7" style="text-align: center;">Error loading leaderboard</td></tr>';
+      });
+    }
+
+    // Save Submission Function
+    function saveSubmission(testNumber, speed, accuracy, wpm, userName, userPhoto) {
+      db.collection('submissions').add({
+        testNumber: testNumber,
+        speed: speed,
+        accuracy: accuracy,
+        wpm: wpm,
+        userName: userName,
+        userPhoto: userPhoto,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        console.log("Submission saved successfully");
+        if (document.querySelector('.tab-button[data-tab="leaderboard"]').classList.contains('active')) {
+          loadLeaderboard();
+        }
+      }).catch((error) => {
+        console.error("Error saving submission:", error);
+      });
+    }
+
+    // Timer Functionality
+    let timerInterval;
+    let timeLeft = 3000; // 50 minutes in seconds
+    let isTimerRunning = false;
+    let startTimeStamp;
+    let pausedTime = 0;
+    let selectedDuration = 3000;
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function updateTimerDisplay() {
+      document.getElementById('timer').textContent = formatTime(timeLeft);
+    }
+
+    function startTimer() {
+      if (!isTimerRunning) {
+        isTimerRunning = true;
+        document.getElementById('startPause').textContent = 'Pause';
+        paragraphB.disabled = false;
+        paragraphB.placeholder = "Start typing here...";
+        paragraphB.focus();
+        
+        startTimeStamp = Date.now() - pausedTime * 1000;
+        pausedTime = 0;
+        
+        timerInterval = setInterval(() => {
+          const elapsedSeconds = Math.floor((Date.now() - startTimeStamp) / 1000);
+          timeLeft = Math.max(0, selectedDuration - elapsedSeconds);
+          
+          updateTimerDisplay();
+          
+          if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            document.getElementById('startPause').textContent = 'Start';
+            paragraphB.disabled = true;
+            compareParagraphs();
+          }
+        }, 200);
+      }
+    }
+
+    function pauseTimer() {
+      if (isTimerRunning) {
+        clearInterval(timerInterval);
+        isTimerRunning = false;
+        document.getElementById('startPause').textContent = 'Start';
+        paragraphB.disabled = true;
+        paragraphB.placeholder = "Timer paused - click Start to continue";
+        
+        const elapsedSeconds = Math.floor((Date.now() - startTimeStamp) / 1000);
+        pausedTime = selectedDuration - (timeLeft - elapsedSeconds);
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      isTimerRunning = false;
+      document.getElementById('startPause').textContent = 'Start';
+      paragraphB.disabled = true;
+      paragraphB.value = '';
+      paragraphB.placeholder = "Click Start to begin typing";
+      
+      timeLeft = selectedDuration;
+      pausedTime = 0;
+      updateTimerDisplay();
+    }
+
+    // Event Listeners
+    document.getElementById('googleSignIn').addEventListener('click', signInWithGoogle);
+    document.getElementById('signOut').addEventListener('click', signOut);
+    document.getElementById('startPause').addEventListener('click', () => {
+      isTimerRunning ? pauseTimer() : startTimer();
+    });
+    document.getElementById('reset').addEventListener('click', resetTimer);
+
+    document.querySelectorAll('input[name="duration"]').forEach(radio => {
+      radio.addEventListener('change', function() {
+        if (!isTimerRunning) {
+          selectedDuration = parseInt(this.value);
+          timeLeft = selectedDuration;
+          updateTimerDisplay();
+        }
+      });
     });
 
-    document.getElementById('speed-select').addEventListener('change', () => {
-      testSelect.dispatchEvent(new Event('change'));
+    volumeSelect.addEventListener('change', () => {
+      populateTests(volumeSelect.value);
     });
 
-    // Load first test on start
-    volumeSelect.dispatchEvent(new Event('change'));
+    testSelect.addEventListener('change', updateVideo);
+    speedSelect.addEventListener('change', updateVideo);
+    document.getElementById('leaderboard-test-select').addEventListener('change', loadLeaderboard);
+    document.getElementById('leaderboard-speed-select').addEventListener('change', loadLeaderboard);
+
+    // Initialize
+    updateTimerDisplay();
+    populateTests(volumeSelect.value);
+    updateVideo();
+
+    // Modified downloadPDF function
+    function downloadPDF() {
+      if (isTimerRunning) {
+        pauseTimer();
+      }
+      
+      compareParagraphs();
+      
+      const currentDate = new Date();
+      const formattedDate = `${currentDate.getDate()} ${['January','February','March','April','May','June','July','August','September','October','November','December'][currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+      const formattedTime = `${currentDate.getHours() % 12 || 12}:${String(currentDate.getMinutes()).padStart(2, '0')} ${currentDate.getHours() >= 12 ? 'PM' : 'AM'}`;
+
+      const headerContent = `
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h2 style="color: #4361ee;">Steno Warriors Result Sheet</h2>
+          <div style="margin-top: 10px;">
+            Test Date & Time: ${formattedDate}, ${formattedTime}
+          </div>
+        </div>
+      `;
+
+      const headerText = document.createElement('div');
+      headerText.innerHTML = headerContent;
+      headerText.style.textAlign = 'center';
+
+      const textBoxC = document.getElementById('textBoxC');
+      textBoxC.insertBefore(headerText, textBoxC.firstChild);
+      
+      const downloadBtn = document.createElement('button');
+      downloadBtn.textContent = 'Download PDF';
+      downloadBtn.className = 'download-btn';
+      downloadBtn.onclick = generatePDF;
+      
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = 'Close Results';
+      closeBtn.className = 'download-btn';
+      closeBtn.style.marginLeft = '10px';
+      closeBtn.onclick = () => location.reload();
+      
+      textBoxC.appendChild(downloadBtn);
+      textBoxC.appendChild(closeBtn);
+      textBoxC.style.display = 'block';
+
+      // Save to leaderboard
+      const user = auth.currentUser;
+      if (user) {
+        const testNumber = parseInt(testSelect.value);
+        const speed = parseInt(speedSelect.value);
+        const accuracy = parseFloat(document.querySelector('#textBoxC table tr:last-child td:nth-child(7)').textContent.replace('%', ''));
+        const wpm = parseInt(document.querySelector('#textBoxC table tr:last-child td:nth-child(6)').textContent);
+        
+        saveSubmission(testNumber, speed, accuracy, wpm, user.displayName || user.email, user.photoURL);
+      }
+    }
+
+    function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const element = document.getElementById('textBoxC');
+      
+      const buttons = element.querySelectorAll('button');
+      buttons.forEach(btn => btn.style.display = 'none');
+      
+      const originalPadding = element.style.padding;
+      element.style.padding = '20px';
+      
+      html2canvas(element, {
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        allowTaint: true
+      }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210;
+        const pageHeight = 295;
+        const imgHeight = canvas.height * imgWidth / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+
+        buttons.forEach(btn => btn.style.display = 'block');
+        element.style.padding = originalPadding;
+        
+        pdf.save('StenoWarriors_Result.pdf');
+      });
+    }
   </script>
 </body>
 </html>
