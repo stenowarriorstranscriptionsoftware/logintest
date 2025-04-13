@@ -5,7 +5,7 @@
   <title>Steno Warriors Transcription Software</title>
   <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script> <!-- 🔥 Firestore SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
   <script src="lookup.js"></script>
   <script src="textLookup.js"></script>
   <script src="1c2.js"></script>
@@ -15,7 +15,6 @@
 </head>
 
 <body>
-  <!-- Login UI -->
   <div id="login-container" class="login-container">
     <div class="login-content">
       <h2>Welcome to Steno Warriors</h2>
@@ -27,7 +26,6 @@
     </div>
   </div>
 
-  <!-- Header -->
   <div class="header">
     <h1>Steno Warriors Transcription Software</h1>
     <div id="user-info" style="display: none;">
@@ -37,7 +35,6 @@
     </div>
   </div>
 
-  <!-- Main app -->
   <div class="main" id="app-content" style="display: none;">
     <h2>Please select a Test</h2>
     <div class="select-panel">
@@ -64,12 +61,11 @@
       </div>
     </div>
 
-    <div id="paragraphA"></div>
+    <div id="paragraphA" style="white-space: pre-wrap; background: #f1f1f1; padding: 10px; margin: 10px 0;"></div>
     <textarea class="inputBox" id="paragraphB" spellcheck="false" placeholder="Click Start to begin typing" disabled></textarea>
     <div class="resultText" id="textBoxC" style="display: none;"></div>
     <button onclick="downloadPDF()" class="download-btn">Show Result</button>
 
-    <!-- 🔥 Leaderboard Section -->
     <div id="leaderboard-section" style="margin-top: 40px;">
       <h2>🏆 Leaderboard (Top Accuracy)</h2>
       <ol id="leaderboard-list"></ol>
@@ -80,12 +76,10 @@
     <div>Made with ❤️ &middot; Anish &middot; <a href="#">Contact</a></div>
   </div>
 
-  <!-- PDF and Screenshot -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
   <script>
-    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyBjY-pE5jxQJgKqDZrcE7Im66_5r-X_mRA",
       authDomain: "setup-login-page.firebaseapp.com",
@@ -98,9 +92,8 @@
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
-    const db = firebase.firestore(); // 🔥 Firestore init
+    const db = firebase.firestore();
 
-    // Google Sign-in
     function signInWithGoogle() {
       const provider = new firebase.auth.GoogleAuthProvider();
       auth.signInWithPopup(provider).catch(error => alert("Error: " + error.message));
@@ -110,7 +103,6 @@
       auth.signOut();
     }
 
-    // Auth state change
     auth.onAuthStateChanged((user) => {
       document.getElementById('login-container').style.display = user ? 'none' : 'flex';
       document.getElementById('app-content').style.display = user ? 'block' : 'none';
@@ -118,14 +110,79 @@
       if (user) {
         document.getElementById('user-photo').src = user.photoURL || 'https://via.placeholder.com/40';
         document.getElementById('user-name').textContent = user.displayName || user.email;
-        loadLeaderboard(); // 🔥 Load leaderboard on login
+        loadLeaderboard();
       }
     });
 
     document.getElementById('googleSignIn').addEventListener('click', signInWithGoogle);
     document.getElementById('signOut').addEventListener('click', signOut);
 
-    // 🔥 Save score to Firestore
+    const volumeSelect = document.getElementById('volume-select');
+    const testSelect = document.getElementById('test-select');
+    const speedSelect = document.getElementById('speed-select');
+    const videoContainer = document.getElementById('video-container');
+    const paragraphA = document.getElementById('paragraphA');
+    const paragraphB = document.getElementById('paragraphB');
+    const textBoxC = document.getElementById('textBoxC');
+
+    const tests = {
+      1: Array.from({ length: 50 }, (_, i) => `${i + 1}`),
+      2: Array.from({ length: 50 }, (_, i) => `${i + 51}`),
+    };
+
+    function populateTests(volume) {
+      testSelect.innerHTML = '';
+      const options = tests[volume];
+      options.forEach(test => {
+        const option = document.createElement('option');
+        option.value = test;
+        option.text = "Test " + test.toString();
+        testSelect.appendChild(option);
+      });
+    }
+
+    function updateVideo() {
+      const spd = speedSelect.value;
+      const tst = testSelect.value;
+      const videoUrl = urlLookup[parseInt(tst)][parseInt(spd)];
+      paragraphA.textContent = textTable[parseInt(tst)];
+      paragraphB.placeholder = "Click Start to begin typing";
+      videoContainer.innerHTML = `<iframe src="${videoUrl}" frameborder="0" allowfullscreen></iframe>`;
+    }
+
+    volumeSelect.addEventListener('change', () => {
+      populateTests(volumeSelect.value);
+      updateVideo();
+    });
+
+    testSelect.addEventListener('change', updateVideo);
+    speedSelect.addEventListener('change', updateVideo);
+    populateTests(volumeSelect.value);
+    updateVideo();
+
+    function compareParagraphs() {
+      const original = paragraphA.textContent.trim();
+      const typed = paragraphB.value.trim();
+      const originalWords = original.split(/\s+/);
+      const typedWords = typed.split(/\s+/);
+      const totalWords = originalWords.length;
+      let correct = 0;
+
+      for (let i = 0; i < Math.min(originalWords.length, typedWords.length); i++) {
+        if (originalWords[i] === typedWords[i]) correct++;
+      }
+
+      const accuracy = ((correct / totalWords) * 100).toFixed(2);
+      const mistakes = totalWords - correct;
+
+      textBoxC.innerHTML = `<h3>Result:</h3>
+        <p><strong>Accuracy:</strong> ${accuracy}%</p>
+        <p><strong>Mistakes:</strong> ${mistakes}</p>`;
+      textBoxC.style.display = 'block';
+
+      saveScoreToFirestore(parseFloat(accuracy));
+    }
+
     function saveScoreToFirestore(accuracy) {
       const user = auth.currentUser;
       if (!user) return;
@@ -134,12 +191,9 @@
         name: user.displayName || user.email,
         accuracy: accuracy,
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      }).then(() => {
-        loadLeaderboard(); // Refresh leaderboard
-      }).catch(err => console.error("Error saving score:", err));
+      }).then(loadLeaderboard);
     }
 
-    // 🔥 Load leaderboard
     function loadLeaderboard() {
       const list = document.getElementById("leaderboard-list");
       list.innerHTML = "";
@@ -157,26 +211,7 @@
         });
     }
 
-    // 🔥 Make sure to call saveScoreToFirestore inside your compareParagraphs()
-    // For example:
-    function compareParagraphs() {
-      const original = document.getElementById("paragraphA").textContent.trim();
-      const typed = document.getElementById("paragraphB").value.trim();
-      const totalWords = original.split(/\s+/).length;
-      const typedWords = typed.split(/\s+/).length;
-      const mistakes = Math.abs(totalWords - typedWords); // Dummy logic
-      const accuracy = Math.max(0, 100 - (mistakes / totalWords * 100)).toFixed(2);
-
-      const resultDiv = document.getElementById("textBoxC");
-      resultDiv.innerHTML = `<h3>Results:</h3>
-        <p><strong>Accuracy:</strong> ${accuracy}%</p>
-        <p><strong>Typed Words:</strong> ${typedWords}</p>
-        <p><strong>Expected Words:</strong> ${totalWords}</p>
-        <p><strong>Errors:</strong> ${mistakes}</p>`;
-      resultDiv.style.display = 'block';
-
-      saveScoreToFirestore(parseFloat(accuracy)); // 🔥 Save accuracy to DB
-    }
+    // Add timer logic if needed here (not repeated for brevity)
   </script>
 </body>
 </html>
