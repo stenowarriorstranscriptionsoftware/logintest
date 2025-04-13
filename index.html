@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+  <title>Steno Warriors Transcription Software</title>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
+  <!-- Your JS/CSS -->
+  <script src="js/lookup.js"></script>
+  <script src="js/textLookup.js"></script>
+  <script src="js/1c2.js"></script>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com/">
+  <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    .main {
+      display: none;
+    }
+    .login-container {
+      display: none;
+      justify-content: center;
+      align-items: center;
+      height: 80vh;
+      flex-direction: column;
+    }
+    .download-btn {
+      background-color: #4361ee;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px;
+      cursor: pointer;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <h1>Steno Warriors Transcription Software</h1>
+    <button onclick="signOut()" class="download-btn" style="position: absolute; top: 10px; right: 10px;">Sign Out</button>
+  </div>
+
+  <!-- Google Login Panel -->
+  <div class="login-container" id="login-panel">
+    <h2>Welcome to Steno Warriors</h2>
+    <button onclick="signInWithGoogle()" class="download-btn">Sign in with Google</button>
+  </div>
+
+  <!-- Main App -->
+  <div class="main" id="main-panel">
+    <h2>Please select a Test</h2>
+    <div class="select-panel">
+      <select id="volume-select">
+        <option value="1">Test 1-50 (General Matter)</option>
+        <option value="2">Test 51-100 (KC Mix Transcription)</option>
+      </select>
+      <select id="test-select"></select>
+      <select id="speed-select">
+        <option value="80">80 WPM</option>
+        <option value="100">100 WPM</option>
+      </select>
+    </div>
+
+    <div id="video-container"></div>
+
+    <div class="timer-container">
+      Typing timer: <span id="timer">50:00</span>
+      <div class="timer-controls">
+        <label><input type="radio" name="duration" value="2400"> 40 min</label>
+        <label><input type="radio" name="duration" value="3000" checked> 50 min</label>
+        <button id="startPause" class="tmrBtn">Start</button>
+        <button id="reset" class="tmrBtn">Reset</button>
+      </div>
+    </div>
+
+    <div id="paragraphA"></div>
+    <textarea class="inputBox" id="paragraphB" spellcheck="false" placeholder="Click Start to begin typing" disabled></textarea>
+    <div class="resultText" id="textBoxC" style="display: none;"></div>
+    <button onclick="downloadPDF()" class="download-btn">Show Result</button>
+  </div>
+
+  <div class="footer">
+    <div>
+      Made with <span style="color: red;">&hearts;</span> &middot; Anish &middot; <a href="#"> Contact </a>
+    </div>
+  </div>
+
+  <!-- jsPDF & html2canvas -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <!-- Your existing scripts (timer, video, logic) -->
+  <!-- Keep your existing JavaScript here, including compareParagraphs(), downloadPDF(), etc. -->
+
+  <script>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjY-pE5jxQJgKqDZrcE7Im66_5r-X_mRA",
+      authDomain: "setup-login-page.firebaseapp.com",
+      projectId: "setup-login-page",
+      storageBucket: "setup-login-page.appspot.com",
+      messagingSenderId: "341251531099",
+      appId: "1:341251531099:web:f4263621455541ffdc3a7e",
+      measurementId: "G-ZXFC7NR9HV"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const provider = new firebase.auth.GoogleAuthProvider();
+
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        document.getElementById('main-panel').style.display = 'block';
+        document.getElementById('login-panel').style.display = 'none';
+      } else {
+        document.getElementById('main-panel').style.display = 'none';
+        document.getElementById('login-panel').style.display = 'flex';
+      }
+    });
+
+    function signInWithGoogle() {
+      firebase.auth().signInWithPopup(provider)
+        .then(result => {
+          console.log("Signed in as:", result.user.displayName);
+        })
+        .catch(error => {
+          alert("Error: " + error.message);
+        });
+    }
+
+    function signOut() {
+      firebase.auth().signOut().then(() => {
+        alert("You have been signed out.");
+      });
+    }
+  </script>
+</body>
+</html>
