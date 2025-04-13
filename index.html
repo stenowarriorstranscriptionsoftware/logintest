@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Steno Warriors Transcription Software</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script> <!-- 🔥 Firestore SDK -->
+  <script src="lookup.js"></script>
+  <script src="textLookup.js"></script>
+  <script src="1c2.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+  <!-- Login UI -->
+  <div id="login-container" class="login-container">
+    <div class="login-content">
+      <h2>Welcome to Steno Warriors</h2>
+      <p>Please sign in with Google to access the transcription tests</p>
+      <button id="googleSignIn" class="google-signin-btn">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google logo">
+        Sign in with Google
+      </button>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="header">
+    <h1>Steno Warriors Transcription Software</h1>
+    <div id="user-info" style="display: none;">
+      <img id="user-photo" width="40" height="40" style="border-radius: 50%;">
+      <span id="user-name" style="margin: 0 10px;"></span>
+      <button id="signOut" class="sign-out-btn">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- Main app -->
+  <div class="main" id="app-content" style="display: none;">
+    <h2>Please select a Test</h2>
+    <div class="select-panel">
+      <select id="volume-select">
+        <option value="1">Test 1-50 (General Matter)</option>
+        <option value="2">Test 51-100 (KC Mix Transcription)</option>
+      </select>
+      <select id="test-select"></select>
+      <select id="speed-select">
+        <option value="80">80 WPM</option>
+        <option value="100">100 WPM</option>
+      </select>
+    </div>
+
+    <div id="video-container"></div>
+
+    <div class="timer-container">
+      Typing timer: <span id="timer">50:00</span>
+      <div class="timer-controls">
+        <label><input type="radio" name="duration" value="2400"> 40 min</label>
+        <label><input type="radio" name="duration" value="3000" checked> 50 min</label>
+        <button id="startPause" class="tmrBtn">Start</button>
+        <button id="reset" class="tmrBtn">Reset</button>
+      </div>
+    </div>
+
+    <div id="paragraphA"></div>
+    <textarea class="inputBox" id="paragraphB" spellcheck="false" placeholder="Click Start to begin typing" disabled></textarea>
+    <div class="resultText" id="textBoxC" style="display: none;"></div>
+    <button onclick="downloadPDF()" class="download-btn">Show Result</button>
+
+    <!-- 🔥 Leaderboard Section -->
+    <div id="leaderboard-section" style="margin-top: 40px;">
+      <h2>🏆 Leaderboard (Top Accuracy)</h2>
+      <ol id="leaderboard-list"></ol>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div>Made with ❤️ &middot; Anish &middot; <a href="#">Contact</a></div>
+  </div>
+
+  <!-- PDF and Screenshot -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <script>
+    // Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjY-pE5jxQJgKqDZrcE7Im66_5r-X_mRA",
+      authDomain: "setup-login-page.firebaseapp.com",
+      projectId: "setup-login-page",
+      storageBucket: "setup-login-page.appspot.com",
+      messagingSenderId: "341251531099",
+      appId: "1:341251531099:web:f4263621455541ffdc3a7e",
+      measurementId: "G-ZXFC7NR9HV"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore(); // 🔥 Firestore init
+
+    // Google Sign-in
+    function signInWithGoogle() {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider).catch(error => alert("Error: " + error.message));
+    }
+
+    function signOut() {
+      auth.signOut();
+    }
+
+    // Auth state change
+    auth.onAuthStateChanged((user) => {
+      document.getElementById('login-container').style.display = user ? 'none' : 'flex';
+      document.getElementById('app-content').style.display = user ? 'block' : 'none';
+      document.getElementById('user-info').style.display = user ? 'block' : 'none';
+      if (user) {
+        document.getElementById('user-photo').src = user.photoURL || 'https://via.placeholder.com/40';
+        document.getElementById('user-name').textContent = user.displayName || user.email;
+        loadLeaderboard(); // 🔥 Load leaderboard on login
+      }
+    });
+
+    document.getElementById('googleSignIn').addEventListener('click', signInWithGoogle);
+    document.getElementById('signOut').addEventListener('click', signOut);
+
+    // 🔥 Save score to Firestore
+    function saveScoreToFirestore(accuracy) {
+      const user = auth.currentUser;
+      if (!user) return;
+      db.collection("transcriptionScores").add({
+        uid: user.uid,
+        name: user.displayName || user.email,
+        accuracy: accuracy,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        loadLeaderboard(); // Refresh leaderboard
+      }).catch(err => console.error("Error saving score:", err));
+    }
+
+    // 🔥 Load leaderboard
+    function loadLeaderboard() {
+      const list = document.getElementById("leaderboard-list");
+      list.innerHTML = "";
+      db.collection("transcriptionScores")
+        .orderBy("accuracy", "desc")
+        .limit(10)
+        .get()
+        .then(snapshot => {
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const li = document.createElement("li");
+            li.textContent = `${data.name} - ${data.accuracy}%`;
+            list.appendChild(li);
+          });
+        });
+    }
+
+    // 🔥 Make sure to call saveScoreToFirestore inside your compareParagraphs()
+    // For example:
+    function compareParagraphs() {
+      const original = document.getElementById("paragraphA").textContent.trim();
+      const typed = document.getElementById("paragraphB").value.trim();
+      const totalWords = original.split(/\s+/).length;
+      const typedWords = typed.split(/\s+/).length;
+      const mistakes = Math.abs(totalWords - typedWords); // Dummy logic
+      const accuracy = Math.max(0, 100 - (mistakes / totalWords * 100)).toFixed(2);
+
+      const resultDiv = document.getElementById("textBoxC");
+      resultDiv.innerHTML = `<h3>Results:</h3>
+        <p><strong>Accuracy:</strong> ${accuracy}%</p>
+        <p><strong>Typed Words:</strong> ${typedWords}</p>
+        <p><strong>Expected Words:</strong> ${totalWords}</p>
+        <p><strong>Errors:</strong> ${mistakes}</p>`;
+      resultDiv.style.display = 'block';
+
+      saveScoreToFirestore(parseFloat(accuracy)); // 🔥 Save accuracy to DB
+    }
+  </script>
+</body>
+</html>
