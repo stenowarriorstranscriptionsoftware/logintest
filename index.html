@@ -1,158 +1,77 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
+  <meta http-equiv="content-type" content="text/html;charset=utf-8" />
   <title>Steno Warriors Transcription Software</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles.css" />
+  <script src="js/lookup.js"></script>
+  <script src="js/textLookup.js"></script>
+  <script src="js/1c2.js"></script>
+  <link rel="stylesheet" href="css/styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com/">
-  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <!-- Firebase SDKs -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-analytics-compat.js"></script>
 </head>
 
 <body>
-  <!-- Login screen -->
+  <!-- Login Container (initially shown) -->
   <div id="login-container" class="login-container">
-    <div class="login-content">
+    <div class="login-box">
       <h1>Steno Warriors</h1>
-      <p>Sign in to continue</p>
+      <p>Please sign in to access the transcription software</p>
       <button id="google-signin" class="google-signin-btn">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google logo" />
+        <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google logo">
         Sign in with Google
       </button>
       <div id="login-error" class="error-message"></div>
     </div>
   </div>
 
-  <!-- App -->
-  <div id="app-container" class="app-container hidden">
-    <header class="header">
+  <!-- Main App Container (initially hidden) -->
+  <div id="app-container" style="display: none;">
+    <div class="header">
       <h1>Steno Warriors Transcription Software</h1>
-      <div id="user-info">
+      <div class="user-info">
+        <img id="user-avatar" src="" alt="User avatar">
         <span id="user-name"></span>
         <button id="sign-out" class="sign-out-btn">Sign Out</button>
       </div>
-    </header>
+    </div>
 
-    <main class="main">
-      <h2>Please select a Test</h2>
-      <div class="select-panel">
-        <select id="volume-select">
-          <option value="1">Test 1-50 (General Matter)</option>
-          <option value="2">Test 51-100 (KC Mix Transcription)</option>
-        </select>
-        <select id="test-select"></select>
-        <select id="speed-select">
-          <option value="80">80 WPM</option>
-          <option value="100">100 WPM</option>
-        </select>
-      </div>
+    <!-- Navigation -->
+    <nav class="main-nav">
+      <button class="nav-btn active" data-target="dashboard">Dashboard</button>
+      <button class="nav-btn" data-target="transcription">Transcription Test</button>
+      <button class="nav-btn" data-target="history">History</button>
+    </nav>
 
-      <div id="video-container"></div>
-
-      <div class="timer-container">
-        <span>Typing timer: <span id="timer">50:00</span></span>
-        <div class="timer-controls">
-          <label><input type="radio" name="duration" value="2400"> 40 min</label>
-          <label><input type="radio" name="duration" value="3000" checked> 50 min</label>
-          <button id="startPause" class="tmrBtn">Start</button>
-          <button id="reset" class="tmrBtn">Reset</button>
+    <!-- Dashboard Section -->
+    <div id="dashboard" class="content-section active">
+      <div class="dashboard-container">
+        <div class="stats-container">
+          <div class="stat-card">
+            <h3>Total Tests Taken</h3>
+            <p id="total-tests">0</p>
+          </div>
+          <div class="stat-card">
+            <h3>Average Accuracy</h3>
+            <p id="avg-accuracy">0%</p>
+          </div>
+          <div class="stat-card">
+            <h3>Best WPM</h3>
+            <p id="best-wpm">0</p>
+          </div>
         </div>
-      </div>
 
-      <div id="paragraphA"></div>
-      <textarea id="paragraphB" class="inputBox" placeholder="Click Start to begin typing" disabled></textarea>
-
-      <div id="textBoxC" class="resultText hidden"></div>
-      <button id="downloadBtn" class="download-btn">Show Result</button>
-
-      <!-- Dashboard section -->
-      <div style="margin-top: 30px;">
-        <button id="loadDashboard" class="download-btn">📊 View Past Tests</button>
-        <div id="dashboard" class="resultText hidden"></div>
-      </div>
-    </main>
-
-    <footer class="footer">
-      <p>Made with ❤️ by Anish · <a href="#">Contact</a></p>
-    </footer>
-  </div>
-
-  <!-- External Libraries -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-  <!-- App Scripts -->
-  <script src="lookup.js"></script>
-  <script src="textLookup.js"></script>
-  <script src="1c2.js"></script>
-
-  <script>
-    // Firebase Config
-    const firebaseConfig = {
-      apiKey: "AIzaSyBjY-pE5jxQJgKqDZrcE7Im66_5r-X_mRA",
-      authDomain: "setup-login-page.firebaseapp.com",
-      projectId: "setup-login-page",
-      storageBucket: "setup-login-page.appspot.com",
-      messagingSenderId: "341251531099",
-      appId: "1:341251531099:web:f4263621455541ffdc3a7e"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-
-    // Auth State Handler
-    const loginContainer = document.getElementById("login-container");
-    const appContainer = document.getElementById("app-container");
-    const userNameDisplay = document.getElementById("user-name");
-
-    firebase.auth().onAuthStateChanged(user => {
-      if (user) {
-        loginContainer.style.display = "none";
-        appContainer.classList.remove("hidden");
-        userNameDisplay.textContent = `Hi, ${user.displayName}`;
-      } else {
-        loginContainer.style.display = "flex";
-        appContainer.classList.add("hidden");
-      }
-    });
-
-    // Google Sign-In
-    document.getElementById("google-signin").onclick = () => {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      firebase.auth().signInWithPopup(provider).catch(error => {
-        document.getElementById("login-error").textContent = error.message;
-      });
-    };
-
-    // Sign Out
-    document.getElementById("sign-out").onclick = () => firebase.auth().signOut();
-
-    // Dashboard logic
-    document.getElementById("loadDashboard").addEventListener("click", async () => {
-      const user = firebase.auth().currentUser;
-      const dashboard = document.getElementById("dashboard");
-
-      if (!user) {
-        alert("Please sign in first.");
-        return;
-      }
-
-      try {
-        const snapshot = await firebase.firestore()
-          .collection("users")
-          .doc(user.uid)
-          .collection("tests")
-          .orderBy("timestamp", "desc")
-          .get();
-
-        if (snapshot.empty) {
-          dashboard.innerHTML = "<p>No test records found.</p>";
-        } else {
-          let table = `<h2>📊 Your Test History</h2>
+        <div class="recent-tests">
+          <h2>Recent Tests</h2>
+          <div class="tests-table">
             <table>
               <thead>
                 <tr>
@@ -160,32 +79,832 @@
                   <th>Test</th>
                   <th>WPM</th>
                   <th>Accuracy</th>
-                  <th>Errors</th>
+                  <th>Actions</th>
                 </tr>
-              </thead><tbody>`;
+              </thead>
+              <tbody id="recent-tests-body">
+                <!-- Will be populated by JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
 
-          snapshot.forEach(doc => {
-            const d = doc.data();
-            table += `<tr>
-              <td>${new Date(d.timestamp).toLocaleString()}</td>
-              <td>${d.test || "-"}</td>
-              <td>${d.wpm || "-"}</td>
-              <td>${d.accuracy || "0"}%</td>
-              <td>${d.errors || "0"}%</td>
-            </tr>`;
-          });
+    <!-- Transcription Test Section -->
+    <div id="transcription" class="content-section">
+      <div class="main">
+        <h2>Please select a Test</h2>
+        <div class="select-panel">
+          <select id="volume-select">
+            <option value="1">Test 1-50 (General Matter)</option>
+            <option value="2">Test 51-100 (KC Mix Transcription)</option>
+          </select>
 
-          table += "</tbody></table>";
-          dashboard.innerHTML = table;
+          <select id="test-select">
+          </select>
+        
+          <select id="speed-select">
+            <option value="80">80 WPM</option>
+            <option value="100">100 WPM</option>
+          </select>
+        </div>
+        <div id="video-container"></div>
+
+        <div class="timer-container">
+          Typing timer: <span id="timer">50:00</span>
+          <div class="timer-controls">
+            <label><input type="radio" name="duration" value="2400"> 40 min</label>
+            <label><input type="radio" name="duration" value="3000" checked> 50 min</label>
+            <button id="startPause" class="tmrBtn">Start</button>
+            <button id="reset" class="tmrBtn">Reset</button>
+          </div>
+        </div>
+        
+        <div id="paragraphA"></div>
+        <textarea class="inputBox" id="paragraphB" spellcheck="false" placeholder="Click Start to begin typing" disabled></textarea>
+        <div class="resultText" id="textBoxC" style="display: none;"></div>
+        <button id="show-result-btn" class="download-btn">Show Result</button>
+      </div>
+    </div>
+
+    <!-- History Section -->
+    <div id="history" class="content-section">
+      <div class="history-container">
+        <h2>Your Test History</h2>
+        <div class="history-table">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Test</th>
+                <th>Speed</th>
+                <th>Accuracy</th>
+                <th>WPM</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="history-body">
+              <!-- Will be populated by JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div>
+        Made with <span style="color: red;">&hearts;</span> &middot; Anish &middot; <a href=""> Contact </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <script>
+    // Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBjY-pE5jxQJgKqDZrcE7Im66_5r-X_mRA",
+      authDomain: "setup-login-page.firebaseapp.com",
+      projectId: "setup-login-page",
+      storageBucket: "setup-login-page.appspot.com",
+      messagingSenderId: "341251531099",
+      appId: "1:341251531099:web:f4263621455541ffdc3a7e",
+      measurementId: "G-ZXFC7NR9HV"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const analytics = firebase.analytics();
+
+    // DOM elements
+    const loginContainer = document.getElementById('login-container');
+    const appContainer = document.getElementById('app-container');
+    const googleSignInBtn = document.getElementById('google-signin');
+    const signOutBtn = document.getElementById('sign-out');
+    const userAvatar = document.getElementById('user-avatar');
+    const userName = document.getElementById('user-name');
+    const loginError = document.getElementById('login-error');
+    const navButtons = document.querySelectorAll('.nav-btn');
+    const contentSections = document.querySelectorAll('.content-section');
+    const showResultBtn = document.getElementById('show-result-btn');
+
+    // Google Sign-In
+    googleSignInBtn.addEventListener('click', () => {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      auth.signInWithPopup(provider)
+        .then((result) => {
+          // User signed in
+          analytics.logEvent('login', { method: 'Google' });
+        })
+        .catch((error) => {
+          loginError.textContent = error.message;
+          console.error('Sign in error:', error);
+        });
+    });
+
+    // Sign out
+    signOutBtn.addEventListener('click', () => {
+      auth.signOut()
+        .then(() => {
+          analytics.logEvent('logout');
+        })
+        .catch((error) => {
+          console.error('Sign out error:', error);
+        });
+    });
+
+    // Navigation
+    navButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        const target = button.getAttribute('data-target');
+        
+        // Update active button
+        navButtons.forEach(btn => btn.classList.remove('active'));
+        button.classList.add('active');
+        
+        // Show target section
+        contentSections.forEach(section => {
+          section.classList.remove('active');
+          if (section.id === target) {
+            section.classList.add('active');
+          }
+        });
+
+        // Load data if needed
+        if (target === 'dashboard') {
+          loadDashboardData();
+        } else if (target === 'history') {
+          loadHistoryData();
         }
+      });
+    });
 
-        dashboard.classList.remove("hidden");
-        dashboard.scrollIntoView({ behavior: "smooth" });
-
-      } catch (error) {
-        dashboard.innerHTML = `<p>Error loading dashboard: ${error.message}</p>`;
+    // Auth state observer
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        // User is signed in
+        loginContainer.style.display = 'none';
+        appContainer.style.display = 'block';
+        
+        // Update UI with user info
+        userAvatar.src = user.photoURL || 'https://via.placeholder.com/40';
+        userName.textContent = user.displayName || 'User';
+        
+        // Save user data to Firestore
+        db.collection('users').doc(user.uid).set({
+          name: user.displayName,
+          email: user.email,
+          lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        
+        // Initialize the app
+        initializeApp();
+        loadDashboardData();
+      } else {
+        // User is signed out
+        loginContainer.style.display = 'flex';
+        appContainer.style.display = 'none';
       }
     });
+
+    // Load dashboard data
+    function loadDashboardData() {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      // Get last 5 tests
+      db.collection('tests')
+        .where('userId', '==', user.uid)
+        .orderBy('timestamp', 'desc')
+        .limit(5)
+        .get()
+        .then(querySnapshot => {
+          const testsBody = document.getElementById('recent-tests-body');
+          testsBody.innerHTML = '';
+          
+          let totalTests = 0;
+          let totalAccuracy = 0;
+          let bestWPM = 0;
+
+          querySnapshot.forEach(doc => {
+            const test = doc.data();
+            totalTests++;
+            totalAccuracy += test.accuracy;
+            if (test.wpm > bestWPM) bestWPM = test.wpm;
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${new Date(test.timestamp.toDate()).toLocaleString()}</td>
+              <td>Test ${test.testNumber}</td>
+              <td>${test.wpm}</td>
+              <td>${test.accuracy.toFixed(2)}%</td>
+              <td><button class="view-btn" data-id="${doc.id}">View</button></td>
+            `;
+            testsBody.appendChild(row);
+          });
+
+          // Update stats
+          document.getElementById('total-tests').textContent = totalTests;
+          document.getElementById('avg-accuracy').textContent = totalTests > 0 
+            ? (totalAccuracy / totalTests).toFixed(2) + '%' 
+            : '0%';
+          document.getElementById('best-wpm').textContent = bestWPM;
+
+          // Add event listeners to view buttons
+          document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              viewTestResult(btn.getAttribute('data-id'));
+            });
+          });
+        })
+        .catch(error => {
+          console.error('Error loading dashboard data:', error);
+        });
+    }
+
+    // Load history data
+    function loadHistoryData() {
+      const user = auth.currentUser;
+      if (!user) return;
+
+      db.collection('tests')
+        .where('userId', '==', user.uid)
+        .orderBy('timestamp', 'desc')
+        .get()
+        .then(querySnapshot => {
+          const historyBody = document.getElementById('history-body');
+          historyBody.innerHTML = '';
+          
+          querySnapshot.forEach(doc => {
+            const test = doc.data();
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${new Date(test.timestamp.toDate()).toLocaleString()}</td>
+              <td>Test ${test.testNumber}</td>
+              <td>${test.speed} WPM</td>
+              <td>${test.accuracy.toFixed(2)}%</td>
+              <td>${test.wpm}</td>
+              <td><button class="view-btn" data-id="${doc.id}">View</button></td>
+            `;
+            historyBody.appendChild(row);
+          });
+
+          // Add event listeners to view buttons
+          document.querySelectorAll('.view-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              viewTestResult(btn.getAttribute('data-id'));
+            });
+          });
+        })
+        .catch(error => {
+          console.error('Error loading history data:', error);
+        });
+    }
+
+    // View test result
+    function viewTestResult(testId) {
+      db.collection('tests').doc(testId).get()
+        .then(doc => {
+          if (doc.exists) {
+            const test = doc.data();
+            
+            // Populate the result view
+            const textBoxC = document.getElementById('textBoxC');
+            textBoxC.innerHTML = test.resultHtml;
+            textBoxC.style.display = 'block';
+            
+            // Show the transcription section
+            navButtons.forEach(btn => btn.classList.remove('active'));
+            document.querySelector('.nav-btn[data-target="transcription"]').classList.add('active');
+            contentSections.forEach(section => section.classList.remove('active'));
+            document.getElementById('transcription').classList.add('active');
+            
+            // Scroll to results
+            textBoxC.scrollIntoView({ behavior: 'smooth' });
+          }
+        })
+        .catch(error => {
+          console.error('Error viewing test result:', error);
+        });
+    }
+
+    // Initialize the main app after authentication
+    function initializeApp() {
+      // Timer functionality
+      let timerDisplay = document.getElementById('timer');
+      let startPauseButton = document.getElementById('startPause');
+      let resetButton = document.getElementById('reset');
+      let paragraphB = document.getElementById('paragraphB');
+      let timerInterval;
+      let timeLeft = 3000;
+      let isTimerRunning = false;
+      let startTimeStamp;
+      let pausedTime = 0;
+      let selectedDuration = 3000;
+
+      function formatTime(seconds) {
+          const mins = Math.floor(seconds / 60);
+          const secs = seconds % 60;
+          return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      }
+
+      function updateTimerDisplay() {
+          timerDisplay.textContent = formatTime(timeLeft);
+      }
+
+      function startTimer() {
+          if (!isTimerRunning) {
+              isTimerRunning = true;
+              startPauseButton.textContent = 'Pause';
+              paragraphB.disabled = false;
+              paragraphB.placeholder = "Start typing here...";
+              paragraphB.focus();
+              
+              startTimeStamp = Date.now() - pausedTime * 1000;
+              pausedTime = 0;
+              
+              timerInterval = setInterval(() => {
+                  const elapsedSeconds = Math.floor((Date.now() - startTimeStamp) / 1000);
+                  timeLeft = Math.max(0, selectedDuration - elapsedSeconds);
+                  
+                  updateTimerDisplay();
+                  
+                  if (timeLeft <= 0) {
+                      clearInterval(timerInterval);
+                      isTimerRunning = false;
+                      startPauseButton.textContent = 'Start';
+                      paragraphB.disabled = true;
+                      compareParagraphs();
+                  }
+              }, 200);
+          }
+      }
+
+      function pauseTimer() {
+          if (isTimerRunning) {
+              clearInterval(timerInterval);
+              isTimerRunning = false;
+              startPauseButton.textContent = 'Start';
+              paragraphB.disabled = true;
+              paragraphB.placeholder = "Timer paused - click Start to continue";
+              
+              const elapsedSeconds = Math.floor((Date.now() - startTimeStamp) / 1000);
+              pausedTime = selectedDuration - (timeLeft - elapsedSeconds);
+          }
+      }
+
+      function resetTimer() {
+          clearInterval(timerInterval);
+          isTimerRunning = false;
+          startPauseButton.textContent = 'Start';
+          paragraphB.disabled = true;
+          paragraphB.value = '';
+          paragraphB.placeholder = "Click Start to begin typing";
+          
+          timeLeft = selectedDuration;
+          pausedTime = 0;
+          updateTimerDisplay();
+      }
+
+      function disableTimerControls() {
+          startPauseButton.disabled = true;
+          resetButton.disabled = true;
+          document.querySelectorAll('input[name="duration"]').forEach(radio => {
+              radio.disabled = true;
+          });
+      }
+
+      function enableTimerControls() {
+          startPauseButton.disabled = false;
+          resetButton.disabled = false;
+          document.querySelectorAll('input[name="duration"]').forEach(radio => {
+              radio.disabled = false;
+          });
+      }
+
+      startPauseButton.addEventListener('click', () => {
+          if (isTimerRunning) {
+              pauseTimer();
+          } else {
+              startTimer();
+          }
+      });
+
+      resetButton.addEventListener('click', resetTimer);
+
+      document.querySelectorAll('input[name="duration"]').forEach(radio => {
+          radio.addEventListener('change', function() {
+              if (!isTimerRunning) {
+                  selectedDuration = parseInt(this.value);
+                  timeLeft = selectedDuration;
+                  updateTimerDisplay();
+              }
+          });
+      });
+
+      updateTimerDisplay();
+
+      const volumeSelect = document.getElementById('volume-select');
+      const testSelect = document.getElementById('test-select');
+      const speedSelect = document.getElementById('speed-select');
+      const videoContainer = document.getElementById('video-container');
+      const paragraphA = document.getElementById('paragraphA');
+
+      const tests = {
+        1: Array.from({ length: 50 }, (_, i) => `${i + 1}`),
+        2: Array.from({ length: 50 }, (_, i) => `${i + 51}`),
+      };
+
+      function populateTests(volume) {
+        testSelect.innerHTML = '';
+        const options = tests[volume];
+        options.forEach(test => {
+          const option = document.createElement('option');
+          option.value = test;
+          option.text = "Test " + test.toString();
+          testSelect.appendChild(option);
+        });
+      }
+
+      function updateVideo() {
+        const spd = document.getElementById('speed-select').value;
+        const tst = document.getElementById('test-select').value;
+
+        videoUrl = urlLookup[parseInt(tst, 10)][parseInt(spd, 10)];
+        paragraphA.textContent = textTable[parseInt(tst, 10)];
+        paragraphB.placeholder = "Click Start to begin typing";
+        videoContainer.innerHTML = `<iframe src="${videoUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`;
+      }
+
+      volumeSelect.addEventListener('change', () => {
+        populateTests(volumeSelect.value);
+        updateVideo();
+      });
+
+      testSelect.addEventListener('change', updateVideo);
+      speedSelect.addEventListener('change', updateVideo);
+
+      populateTests(volumeSelect.value);
+      updateVideo();
+
+      // Show Result button functionality
+      showResultBtn.addEventListener('click', () => {
+        if (isTimerRunning) {
+          pauseTimer();
+        }
+        
+        disableTimerControls();
+        
+        compareParagraphs();
+      });
+
+      // Modified compareParagraphs function to save results
+      window.compareParagraphs = function() {
+        var paragraphA = document.getElementById('paragraphA').textContent
+            .replace(/<[^>]*>/g, '')
+            .replace(/[\u2018\u2019]/g, "'")
+            .trim()
+            .split(/\s+/);
+
+        var paragraphB = document.getElementById('paragraphB').value
+            .replace(/<[^>]*>/g, '')
+            .replace(/[\u2018\u2019]/g, "'")
+            .trim()
+            .split(/\s+/);
+
+        var comparedText = '';
+        var numHalfDiff = 0;
+        var numFullDiff = 0;
+        var wordAIndex = 0;
+        var wordBIndex = 0;
+
+        comparedText += '<div style="border: 1px solid green; width: 930px; padding: 5px; border-radius: 4px; margin-bottom: 10px;">';
+
+        comparedText += '<div style="display: flex; align-items: center; margin-bottom: 5px;">';
+        comparedText += '<div style="width: 20px; height: 20px; color: red; border-radius: 4px;">■</div>';
+        comparedText += '<strong style="margin-left: 5px;">Addition of word.</strong>';
+        comparedText += '</div>';
+
+        comparedText += '<div style="display: flex; align-items: center; margin-bottom: 5px;">';
+        comparedText += '<div style="width: 20px; height: 20px; color: blue; border-radius: 4px;">■</div>';
+        comparedText += '<strong style="margin-left: 5px;">Omission of word.</strong>';
+        comparedText += '</div>';
+
+        comparedText += '<div style="display: flex; align-items: center; margin-bottom: 10px;">';
+        comparedText += '<div style="width: 20px; height: 20px; color: orange; border-radius: 4px;">■</div>';
+        comparedText += '<strong style="margin-left: 5px;">Spelling Mistakes</strong>';
+        comparedText += '</div>';
+
+        comparedText += '<div style="display: flex; align-items: center; margin-bottom: 10px;">';
+        comparedText += '<div style="width: 20px; height: 20px; color: purple; border-radius: 4px;">■</div>';
+        comparedText += '<strong style="margin-left: 5px;">Capitalization Mistakes</strong>';
+        comparedText += '</div>';
+
+        comparedText += '</div>';
+
+        if (paragraphB.length === 0) {
+            comparedText += paragraphA.map(word => '<span style="color: blue;">' + word + '</span>').join(' ');
+            numFullDiff = paragraphA.length;
+            wordAIndex = paragraphA.length;
+        } 
+        else if (paragraphA.length === 0) {
+            comparedText += paragraphB.map(word => '<span style="color: red; text-decoration: line-through;">' + word + '</span>').join(' ');
+            numFullDiff = paragraphB.length;
+            wordBIndex = paragraphB.length;
+        }
+        else {
+            while (wordAIndex < paragraphA.length || wordBIndex < paragraphB.length) {
+                var wordA = paragraphA[wordAIndex] || '';
+                var wordB = paragraphB[wordBIndex] || '';
+                var cleanWordA = wordA.replace(/[,\?\-\s]/g, '');
+                var cleanWordB = wordB.replace(/[,\?\-\s]/g, '');
+
+                if (cleanWordA === cleanWordB) {
+                    comparedText += '<span style="color: green;">' + wordA + '</span> ';
+                    wordAIndex++;
+                    wordBIndex++;
+                } else if (cleanWordA.toLowerCase() === cleanWordB.toLowerCase()) {
+                    comparedText += '<span style="color: purple;">' + wordA + '</span> ';
+                    comparedText += '<span style="text-decoration: line-through; text-decoration-color: green; color: purple;">' + wordB + '</span> ';
+                    wordAIndex++;
+                    wordBIndex++;
+                    numHalfDiff++;
+                } else {
+                    if (!wordA) {
+                        comparedText += '<span style="color: red; text-decoration: line-through;">' + wordB + '</span> ';
+                        wordBIndex++;
+                        numFullDiff++;
+                    } else if (!wordB) {
+                        comparedText += '<span style="color: blue;">' + wordA + '</span> ';
+                        wordAIndex++;
+                        numFullDiff++;
+                    } else {
+                        if (wordA === paragraphB[wordBIndex]) {
+                            comparedText += '<span style="color: orange;">' + wordA + '</span> ';
+                            wordAIndex++;
+                            wordBIndex++;
+                        } else if (wordB === paragraphA[wordAIndex]) {
+                            comparedText += '<span style="text-decoration: line-through; text-decoration-color: green; color: orange;">' + wordB + '</span> ';
+                            wordAIndex++;
+                            wordBIndex++;
+                        } else if (isSimilar(wordA, wordB)) {
+                            comparedText += '<span style="color: orange;">' + wordA + '</span> ';
+                            comparedText += '<span style="text-decoration: line-through; text-decoration-color: green; color: orange;">' + wordB + '</span> ';
+                            wordAIndex++;
+                            wordBIndex++;
+                            numHalfDiff++;
+                        } else {
+                            var pairA = [wordA];
+                            var pairB = [wordB];
+                            for (var i = 1; i < 5 && (wordBIndex + i) < paragraphB.length; i++) {
+                                pairB.push(paragraphB[wordBIndex + i]);
+                            }
+                            for (var i = 1; i < 5 && (wordAIndex + i) < paragraphA.length; i++) {
+                                pairA.push(paragraphA[wordAIndex + i]);
+                            }
+
+                            var foundPairInA = false;
+                            for (var i = 1; i <= 50 && (wordAIndex + i) < paragraphA.length; i++) {
+                                var subarrayA = paragraphA.slice(wordAIndex + i, wordAIndex + i + pairB.length);
+                                if (arraysAreEqual(subarrayA, pairB)) {
+                                    for (var j = 0; j < i; j++) {
+                                        comparedText += '<span style="color: blue;">' + paragraphA[wordAIndex + j] + '</span> ';
+                                        numFullDiff++;
+                                    }
+                                    comparedText += '<span style="color: green;">' + pairB.join(' ') + '</span> ';
+                                    wordAIndex += i + pairB.length;
+                                    wordBIndex += pairB.length;
+                                    foundPairInA = true;
+                                    break;
+                                }
+                            }
+
+                            if (!foundPairInA) {
+                                var foundPairInB = false;
+                                for (var i = 1; i <= 50 && (wordBIndex + i) < paragraphB.length; i++) {
+                                    var subarrayB = paragraphB.slice(wordBIndex + i, wordBIndex + i + pairA.length);
+                                    if (arraysAreEqual(subarrayB, pairA)) {
+                                        for (var j = 0; j < i; j++) {
+                                            comparedText += '<span style="color: red; text-decoration: line-through; text-decoration-color: green;">' + paragraphB[wordBIndex + j] + '</span> ';
+                                            numFullDiff++;
+                                        }
+                                        comparedText += '<span style="color: green;">' + pairA.join(' ') + '</span> ';
+                                        wordAIndex += pairA.length;
+                                        wordBIndex += i + pairA.length;
+                                        foundPairInB = true;
+                                        break;
+                                    }
+                                }
+
+                                if (!foundPairInB) {
+                                    if (wordB === paragraphA[wordAIndex + 1]) {
+                                        var match = checkForMatchingWords(wordA, paragraphB, wordBIndex);
+                                        comparedText += '<span style="color: green;">' + wordA + '</span> ';
+                                        comparedText += '<span>' + wordB + '</span> ';
+                                        wordAIndex += 2;
+                                        wordBIndex++;
+                                        numMissedButMatched++;
+                                        numFullDiff++;
+                                    } else if (wordA === paragraphB[wordBIndex + 1]) {
+                                        var match = checkForMatchingWords(wordB, paragraphA, wordAIndex);
+                                        comparedText += '<span style="color: red; text-decoration: line-through; text-decoration-color: green;">' + wordB + '</span> ';
+                                        comparedText += '<span>' + wordA + '</span> ';
+                                        wordBIndex += 2;
+                                        wordAIndex++;
+                                        numMissedButMatched++;
+                                        numFullDiff++;
+                                    } else {
+                                        comparedText += '<span style="color: blue;">' + wordA + '</span> ';
+                                        comparedText += '<span style="color: red; text-decoration: line-through; text-decoration-color: green;">' + wordB + '</span> ';
+                                        wordAIndex++;
+                                        wordBIndex++;
+                                        numFullDiff++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        var keystrokesCount = document.getElementById('paragraphB').value.length;
+        var errorPercentage = paragraphA.length > 0 ? Math.min(100, ((numHalfDiff / 2) + numFullDiff) / paragraphA.length * 100) : 0;
+        var accuracyPercentage = Math.max(0, 100 - errorPercentage);
+        
+        var endTime = new Date();
+        var typingTimeSeconds = startTime ? (endTime - startTime) / 1000 : 60;
+        var typingTimeMinutes = typingTimeSeconds / 60;
+        var wordsTyped = paragraphB.length;
+        var wpm = typingTimeMinutes > 0 ? Math.round(wordsTyped / typingTimeMinutes) : 0;
+
+        var tableContent =
+            '<h2>Analysis:</h2>' +
+            '<table>' +
+            '<tr>' +
+            '<th style="border: 2px solid green;">Total Words (Original)</th>' +
+            '<th style="border: 2px solid green;">Total Words (Yours)</th>' +
+            '<th style="border: 2px solid green;">Half Mistakes</th>' +
+            '<th style="border: 2px solid green;">Full Mistakes</th>' +
+            '<th style="border: 2px solid green;">Keystrokes</th>' +
+            '<th style="border: 2px solid green;">Typing Speed (WPM)</th>' +
+            '<th style="border: 2px solid green;">Accuracy</th>' +
+            '<th style="border: 2px solid green;">Errors</th>' +
+            '</tr>' +
+            '<tr>' +
+            '<td style="border: 2px solid green;">' + paragraphA.length + '</td>' +
+            '<td style="border: 2px solid green;">' + paragraphB.length + '</td>' +
+            '<td style="border: 2px solid green;">' + numHalfDiff + '</td>' +
+            '<td style="border: 2px solid green;">' + numFullDiff + '</td>' +
+            '<td style="border: 2px solid green;">' + keystrokesCount + '</td>' +
+            '<td style="border: 2px solid green;">' + wpm + '</td>' +
+            '<td style="border: 2px solid green;">' + accuracyPercentage.toFixed(2) + '%</td>' +
+            '<td style="border: 2px solid green;">' + errorPercentage.toFixed(2) + '%</td>' +
+            '</tr>' +
+            '</table>';
+
+        var aiAnalysis = generateAIAnalysis(paragraphA, paragraphB, numHalfDiff, numFullDiff, wpm, accuracyPercentage);
+        
+        const currentDate = new Date();
+        const day = currentDate.getDate();
+        const monthIndex = currentDate.getMonth();
+        const year = currentDate.getFullYear();
+        const hours = currentDate.getHours();
+        const currentMinutes = currentDate.getMinutes();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const formattedHours = hours % 12 || 12;
+        const formattedMinutes = currentMinutes < 10 ? '0' + currentMinutes : currentMinutes;
+
+        const monthNames = [
+          "January", "February", "March", "April", "May", "June",
+          "July", "August", "September", "October", "November", "December"
+        ];
+
+        const formattedDate = `${day} ${monthNames[monthIndex]} ${year},`;
+        const formattedTime = `${formattedHours}:${formattedMinutes} ${ampm}`;
+
+        const headerContent = `
+          <div style="text-align: center; margin-bottom: 20px;">
+            <h2 style="color: #4361ee;">Steno Warriors Result Sheet</h2>
+            <div style="margin-top: 10px;">
+              Test Date & Time: ${formattedDate} ${formattedTime}
+            </div>
+          </div>
+        `;
+
+        const testNumber = document.getElementById('test-select').value;
+        const speed = document.getElementById('speed-select').value;
+
+        const resultHtml = headerContent + 
+            comparedText + 
+            tableContent + 
+            '<div style="margin-top: 30px; border-top: 2px solid #4361ee; padding-top: 20px;">' +
+            '<h2 style="color: #4361ee;">AI-Powered Feedback</h2>' +
+            aiAnalysis +
+            '</div>';
+
+        document.getElementById('textBoxC').innerHTML = resultHtml;
+        document.getElementById('textBoxC').style.display = 'block';
+        document.getElementById('textBoxC').style.border = '2px solid green';
+
+        var differenceSpans = document.querySelectorAll('#textBoxC span[style*="color:"]');
+        differenceSpans.forEach(function (span) {
+            span.style.fontWeight = 'bold';
+        });
+
+        // Save the test result to Firestore
+        const user = auth.currentUser;
+        if (user) {
+          db.collection('tests').add({
+            userId: user.uid,
+            testNumber: testNumber,
+            speed: speed,
+            wpm: wpm,
+            accuracy: accuracyPercentage,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+            resultHtml: resultHtml
+          }).then(() => {
+            // Refresh dashboard data
+            loadDashboardData();
+          }).catch(error => {
+            console.error('Error saving test result:', error);
+          });
+        }
+
+        // Add download and close buttons
+        const downloadBtn = document.createElement('button');
+        downloadBtn.textContent = 'Download PDF';
+        downloadBtn.className = 'download-btn';
+        downloadBtn.onclick = function() {
+          generatePDF();
+          enableTimerControls();
+        };
+        
+        const closeBtn = document.createElement('button');
+        closeBtn.textContent = 'Close Results';
+        closeBtn.className = 'download-btn';
+        closeBtn.style.marginLeft = '10px';
+        closeBtn.onclick = function() {
+          document.getElementById('textBoxC').style.display = 'none';
+          enableTimerControls();
+        };
+        
+        document.getElementById('textBoxC').appendChild(downloadBtn);
+        document.getElementById('textBoxC').appendChild(closeBtn);
+        
+        startTime = null;
+        clearTimeout(typingTimer);
+      }
+
+      function generatePDF() {
+        const { jsPDF } = window.jspdf;
+        const element = document.getElementById('textBoxC');
+        
+        const buttons = element.querySelectorAll('button');
+        buttons.forEach(btn => {
+          btn.style.display = 'none';
+        });
+        
+        const originalPadding = element.style.padding;
+        element.style.padding = '20px';
+        
+        html2canvas(element, {
+          scale: 2,
+          logging: false,
+          useCORS: true,
+          allowTaint: true
+        }).then(canvas => {
+          const imgData = canvas.toDataURL('image/png');
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const imgWidth = 210;
+          const pageHeight = 295;
+          const imgHeight = canvas.height * imgWidth / canvas.width;
+          let heightLeft = imgHeight;
+          let position = 0;
+
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+
+          while (heightLeft >= 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+          }
+
+          buttons.forEach(btn => {
+            btn.style.display = 'block';
+          });
+          element.style.padding = originalPadding;
+          
+          pdf.save('StenoWarriors_Result.pdf');
+        });
+      }
+    }
   </script>
 </body>
 </html>
