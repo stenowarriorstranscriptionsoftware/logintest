@@ -1,217 +1,131 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Steno Warriors Transcription Software</title>
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
-  <script src="lookup.js"></script>
-  <script src="textLookup.js"></script>
-  <script src="1c2.js"></script>
-  <link rel="stylesheet" href="styles.css">
-  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600&display=swap" rel="stylesheet">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-
-<body>
-  <div id="login-container" class="login-container">
-    <div class="login-content">
-      <h2>Welcome to Steno Warriors</h2>
-      <p>Please sign in with Google to access the transcription tests</p>
-      <button id="googleSignIn" class="google-signin-btn">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google logo">
-        Sign in with Google
-      </button>
-    </div>
-  </div>
-
-  <div class="header">
-    <h1>Steno Warriors Transcription Software</h1>
-    <div id="user-info" style="display: none;">
-      <img id="user-photo" width="40" height="40" style="border-radius: 50%;">
-      <span id="user-name" style="margin: 0 10px;"></span>
-      <button id="signOut" class="sign-out-btn">Sign Out</button>
-    </div>
-  </div>
-
-  <div class="main" id="app-content" style="display: none;">
-    <h2>Please select a Test</h2>
-    <div class="select-panel">
-      <select id="volume-select">
-        <option value="1">Test 1-50 (General Matter)</option>
-        <option value="2">Test 51-100 (KC Mix Transcription)</option>
-      </select>
-      <select id="test-select"></select>
-      <select id="speed-select">
-        <option value="80">80 WPM</option>
-        <option value="100">100 WPM</option>
-      </select>
-    </div>
-
-    <div id="video-container"></div>
-
-    <div class="timer-container">
-      Typing timer: <span id="timer">50:00</span>
-      <div class="timer-controls">
-        <label><input type="radio" name="duration" value="2400"> 40 min</label>
-        <label><input type="radio" name="duration" value="3000" checked> 50 min</label>
-        <button id="startPause" class="tmrBtn">Start</button>
-        <button id="reset" class="tmrBtn">Reset</button>
-      </div>
-    </div>
-
-    <div id="paragraphA" style="white-space: pre-wrap; background: #f1f1f1; padding: 10px; margin: 10px 0;"></div>
-    <textarea class="inputBox" id="paragraphB" spellcheck="false" placeholder="Click Start to begin typing" disabled></textarea>
-    <div class="resultText" id="textBoxC" style="display: none;"></div>
-    <button onclick="downloadPDF()" class="download-btn">Show Result</button>
-
-    <div id="leaderboard-section" style="margin-top: 40px;">
-      <h2>🏆 Leaderboard (Top Accuracy)</h2>
-      <ol id="leaderboard-list"></ol>
-    </div>
-  </div>
-
-  <div class="footer">
-    <div>Made with ❤️ &middot; Anish &middot; <a href="#">Contact</a></div>
-  </div>
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Steno Warriors Transcription</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Steno Warriors</h1>
+      <p class="subtitle">Advanced Transcription Comparison Tool</p>
+    </header>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyBjY-pE5jxQJgKqDZrcE7Im66_5r-X_mRA",
-      authDomain: "setup-login-page.firebaseapp.com",
-      projectId: "setup-login-page",
-      storageBucket: "setup-login-page.appspot.com",
-      messagingSenderId: "341251531099",
-      appId: "1:341251531099:web:f4263621455541ffdc3a7e",
-      measurementId: "G-ZXFC7NR9HV"
-    };
+    <main>
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+      <!-- ✅ Custom Test Section -->
+      <section class="custom-test-section">
+        <h3>Add Your Own Test</h3>
+        <div class="input-group">
+          <label for="customTitle">Test Title</label>
+          <input type="text" id="customTitle" placeholder="Enter a name for your test..." />
+        </div>
+        <div class="input-group">
+          <label for="customOriginal">Original Text</label>
+          <textarea id="customOriginal" placeholder="Paste your custom test text here..."></textarea>
+        </div>
+        <div class="button-group">
+          <button id="saveTestBtn">Save Test</button>
+          <button id="clearTestsBtn" class="secondary-btn">Clear All Saved Tests</button>
+        </div>
+        <div class="input-group">
+          <label for="testSelect">Load a Saved Test</label>
+          <select id="testSelect">
+            <option value="">-- Select Saved Test --</option>
+          </select>
+          <button id="loadTestBtn" class="secondary-btn">Load Test</button>
+        </div>
+      </section>
 
-    function signInWithGoogle() {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      auth.signInWithPopup(provider).catch(error => alert("Error: " + error.message));
-    }
+      <!-- Main Input Section -->
+      <section class="input-section">
+        <div class="input-group" id="originalTextGroup">
+          <label for="originalText">Original Text</label>
+          <textarea id="originalText" placeholder="Paste the original text here..."></textarea>
+        </div>
 
-    function signOut() {
-      auth.signOut();
-    }
+        <div id="timerOptions" class="timer-options hidden">
+          <button class="timer-option" data-minutes="40">40 Minutes</button>
+          <button class="timer-option" data-minutes="50">50 Minutes</button>
+        </div>
 
-    auth.onAuthStateChanged((user) => {
-      document.getElementById('login-container').style.display = user ? 'none' : 'flex';
-      document.getElementById('app-content').style.display = user ? 'block' : 'none';
-      document.getElementById('user-info').style.display = user ? 'block' : 'none';
-      if (user) {
-        document.getElementById('user-photo').src = user.photoURL || 'https://via.placeholder.com/40';
-        document.getElementById('user-name').textContent = user.displayName || user.email;
-        loadLeaderboard();
-      }
-    });
+        <div id="timerDisplay" class="timer-display hidden"></div>
 
-    document.getElementById('googleSignIn').addEventListener('click', signInWithGoogle);
-    document.getElementById('signOut').addEventListener('click', signOut);
+        <div class="input-group">
+          <label for="userText">Your Transcription</label>
+          <textarea id="userText" placeholder="Type or paste your transcription here..."></textarea>
+        </div>
 
-    const volumeSelect = document.getElementById('volume-select');
-    const testSelect = document.getElementById('test-select');
-    const speedSelect = document.getElementById('speed-select');
-    const videoContainer = document.getElementById('video-container');
-    const paragraphA = document.getElementById('paragraphA');
-    const paragraphB = document.getElementById('paragraphB');
-    const textBoxC = document.getElementById('textBoxC');
+        <div class="button-group test-controls">
+          <button id="compareBtn">Compare Texts</button>
+          <button id="showFullTextBtn" class="secondary-btn">View Full Texts</button>
+          <button id="closeResultsBtn" class="close-results-btn hidden">Close Results</button>
+        </div>
+      </section>
 
-    const tests = {
-      1: Array.from({ length: 50 }, (_, i) => `${i + 1}`),
-      2: Array.from({ length: 50 }, (_, i) => `${i + 51}`),
-    };
+      <section id="results" class="hidden">
+        <div class="results-header">
+          <div>
+            <h2>Results</h2>
+            <div class="result-meta">
+              <span id="resultDate"></span>
+              <span>Steno Warriors Transcription Tool</span>
+            </div>
+          </div>
+          <button id="downloadPdfBtn" class="download-btn">Download as PDF</button>
+        </div>
 
-    function populateTests(volume) {
-      testSelect.innerHTML = '';
-      const options = tests[volume];
-      options.forEach(test => {
-        const option = document.createElement('option');
-        option.value = test;
-        option.text = "Test " + test.toString();
-        testSelect.appendChild(option);
-      });
-    }
+        <div class="comparison-section">
+          <div class="legend-box">
+            <div class="legend-row"><span class="correct">■</span> Correct</div>
+            <div class="legend-row"><span class="missing">■</span> Missing</div>
+            <div class="legend-row"><span class="addition">■</span> Added</div>
+            <div class="legend-row"><span class="spelling">■</span> Spelling</div>
+            <div class="legend-row"><span class="capitalization">■</span> Capitalization</div>
+          </div>
+          <div id="comparisonResult" class="result-box"></div>
+        </div>
 
-    function updateVideo() {
-      const spd = speedSelect.value;
-      const tst = testSelect.value;
-      const videoUrl = urlLookup[parseInt(tst)][parseInt(spd)];
-      paragraphA.textContent = textTable[parseInt(tst)];
-      paragraphB.placeholder = "Click Start to begin typing";
-      videoContainer.innerHTML = `<iframe src="${videoUrl}" frameborder="0" allowfullscreen></iframe>`;
-    }
+        <div class="analysis-section">
+          <div class="analysis-column">
+            <h3>Statistics</h3>
+            <div id="stats" class="stats-box"></div>
+          </div>
+          <div class="analysis-column">
+            <h3>Feedback</h3>
+            <div id="feedback" class="feedback-box"></div>
+          </div>
+        </div>
+      </section>
 
-    volumeSelect.addEventListener('change', () => {
-      populateTests(volumeSelect.value);
-      updateVideo();
-    });
+      <section id="fullTextSection" class="hidden">
+        <div class="fulltext-header">
+          <h2>Full Texts</h2>
+          <button id="backToResultsBtn" class="secondary-btn">Back to Results</button>
+        </div>
+        <div class="columns">
+          <div class="column">
+            <h3>Original Text</h3>
+            <div id="originalDisplay" class="text-display"></div>
+          </div>
+          <div class="column">
+            <h3>Your Transcription</h3>
+            <div id="userDisplay" class="text-display"></div>
+          </div>
+        </div>
+      </section>
+    </main>
 
-    testSelect.addEventListener('change', updateVideo);
-    speedSelect.addEventListener('change', updateVideo);
-    populateTests(volumeSelect.value);
-    updateVideo();
+    <footer>
+      <p>© 2023 Steno Warriors | Professional Transcription Tool</p>
+    </footer>
+  </div>
 
-    function compareParagraphs() {
-      const original = paragraphA.textContent.trim();
-      const typed = paragraphB.value.trim();
-      const originalWords = original.split(/\s+/);
-      const typedWords = typed.split(/\s+/);
-      const totalWords = originalWords.length;
-      let correct = 0;
-
-      for (let i = 0; i < Math.min(originalWords.length, typedWords.length); i++) {
-        if (originalWords[i] === typedWords[i]) correct++;
-      }
-
-      const accuracy = ((correct / totalWords) * 100).toFixed(2);
-      const mistakes = totalWords - correct;
-
-      textBoxC.innerHTML = `<h3>Result:</h3>
-        <p><strong>Accuracy:</strong> ${accuracy}%</p>
-        <p><strong>Mistakes:</strong> ${mistakes}</p>`;
-      textBoxC.style.display = 'block';
-
-      saveScoreToFirestore(parseFloat(accuracy));
-    }
-
-    function saveScoreToFirestore(accuracy) {
-      const user = auth.currentUser;
-      if (!user) return;
-      db.collection("transcriptionScores").add({
-        uid: user.uid,
-        name: user.displayName || user.email,
-        accuracy: accuracy,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      }).then(loadLeaderboard);
-    }
-
-    function loadLeaderboard() {
-      const list = document.getElementById("leaderboard-list");
-      list.innerHTML = "";
-      db.collection("transcriptionScores")
-        .orderBy("accuracy", "desc")
-        .limit(10)
-        .get()
-        .then(snapshot => {
-          snapshot.forEach(doc => {
-            const data = doc.data();
-            const li = document.createElement("li");
-            li.textContent = `${data.name} - ${data.accuracy}%`;
-            list.appendChild(li);
-          });
-        });
-    }
-
-    // Add timer logic if needed here (not repeated for brevity)
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
