@@ -2,7 +2,6 @@ var numMissedButMatched = 0;
 var startTime;
 var typingTimer;
 
-// Initialize typing timer when the page loads
 window.onload = function() {
     document.getElementById('paragraphB').addEventListener('input', function() {
         if (!startTime) {
@@ -46,7 +45,10 @@ function arraysAreEqual(arr1, arr2) {
 
 function saveToLeaderboard(resultData) {
     const user = firebase.auth().currentUser;
-    if (!user) return;
+    if (!user) {
+        console.log("User not logged in, skipping leaderboard save");
+        return;
+    }
     
     const testNumber = document.getElementById('test-select').value;
     const speed = parseInt(document.getElementById('speed-select').value);
@@ -63,13 +65,14 @@ function saveToLeaderboard(resultData) {
         timestamp: Date.now()
     };
     
-    firebase.database().ref('leaderboard').push(result)
-        .then(() => {
-            console.log("Result saved to leaderboard");
-        })
-        .catch((error) => {
-            console.error("Error saving to leaderboard:", error);
-        });
+    try {
+        const newResultRef = firebase.database().ref('leaderboard').push();
+        newResultRef.set(result)
+            .then(() => console.log("Result saved to leaderboard successfully"))
+            .catch(error => console.error("Error saving to leaderboard:", error));
+    } catch (error) {
+        console.error("Exception when saving to leaderboard:", error);
+    }
 }
 
 function compareParagraphs() {
@@ -92,43 +95,35 @@ function compareParagraphs() {
     var wordBIndex = 0;
 
     comparedText += '<div style="border: 1px solid green; width: 930px; padding: 5px; border-radius: 4px; margin-bottom: 10px;">';
-
     comparedText += '<div style="display: flex; align-items: center; margin-bottom: 5px;">';
     comparedText += '<div style="width: 20px; height: 20px; color: red; border-radius: 4px;">■</div>';
     comparedText += '<strong style="margin-left: 5px;">Addition of word.</strong>';
     comparedText += '</div>';
-
     comparedText += '<div style="display: flex; align-items: center; margin-bottom: 5px;">';
     comparedText += '<div style="width: 20px; height: 20px; color: blue; border-radius: 4px;">■</div>';
     comparedText += '<strong style="margin-left: 5px;">Omission of word.</strong>';
     comparedText += '</div>';
-
     comparedText += '<div style="display: flex; align-items: center; margin-bottom: 10px;">';
     comparedText += '<div style="width: 20px; height: 20px; color: orange; border-radius: 4px;">■</div>';
     comparedText += '<strong style="margin-left: 5px;">Spelling Mistakes</strong>';
     comparedText += '</div>';
-
     comparedText += '<div style="display: flex; align-items: center; margin-bottom: 10px;">';
     comparedText += '<div style="width: 20px; height: 20px; color: purple; border-radius: 4px;">■</div>';
     comparedText += '<strong style="margin-left: 5px;">Capitalization Mistakes</strong>';
     comparedText += '</div>';
-
     comparedText += '</div>';
 
-    // Special case: if paragraphB is empty, count all words in paragraphA as omissions
     if (paragraphB.length === 0) {
         comparedText += paragraphA.map(word => '<span style="color: blue;">' + word + '</span>').join(' ');
         numFullDiff = paragraphA.length;
         wordAIndex = paragraphA.length;
     } 
-    // Special case: if paragraphA is empty, count all words in paragraphB as additions
     else if (paragraphA.length === 0) {
         comparedText += paragraphB.map(word => '<span style="color: red; text-decoration: line-through;">' + word + '</span>').join(' ');
         numFullDiff = paragraphB.length;
         wordBIndex = paragraphB.length;
     }
     else {
-        // Normal comparison when both paragraphs have content
         while (wordAIndex < paragraphA.length || wordBIndex < paragraphB.length) {
             var wordA = paragraphA[wordAIndex] || '';
             var wordB = paragraphB[wordBIndex] || '';
@@ -234,7 +229,6 @@ function compareParagraphs() {
                                     comparedText += '<span style="color: red; text-decoration: line-through; text-decoration-color: green;">' + wordB + '</span> ';
                                     wordAIndex++;
                                     wordBIndex++;
-                                    // Only count one full mistake per word pair
                                     numFullDiff++;
                                 }
                             }
@@ -249,14 +243,12 @@ function compareParagraphs() {
     var errorPercentage = paragraphA.length > 0 ? Math.min(100, ((numHalfDiff / 2) + numFullDiff) / paragraphA.length * 100) : 0;
     var accuracyPercentage = Math.max(0, 100 - errorPercentage);
     
-    // Calculate WPM (Words Per Minute)
     var endTime = new Date();
-    var typingTimeSeconds = startTime ? (endTime - startTime) / 1000 : 60; // Default to 60 seconds if no start time
+    var typingTimeSeconds = startTime ? (endTime - startTime) / 1000 : 60;
     var typingTimeMinutes = typingTimeSeconds / 60;
     var wordsTyped = paragraphB.length;
     var wpm = typingTimeMinutes > 0 ? Math.round(wordsTyped / typingTimeMinutes) : 0;
 
-    // Get timer values
     var timerDisplay = document.getElementById('timer').textContent;
     var timeParts = timerDisplay.split(':');
     var minutesLeft = parseInt(timeParts[0]);
@@ -265,7 +257,6 @@ function compareParagraphs() {
     var selectedDuration = parseInt(document.querySelector('input[name="duration"]:checked').value);
     var timeTaken = selectedDuration - totalSecondsLeft;
 
-    // Prepare result data for leaderboard
     const resultData = {
         accuracy: accuracyPercentage,
         totalWords: paragraphA.length,
@@ -273,7 +264,6 @@ function compareParagraphs() {
         timeTaken: timeTaken
     };
 
-    // Save to leaderboard
     saveToLeaderboard(resultData);
 
     var tableContent =
@@ -301,7 +291,6 @@ function compareParagraphs() {
         '</tr>' +
         '</table>';
 
-    // AI Analysis Section
     var aiAnalysis = generateAIAnalysis(paragraphA, paragraphB, numHalfDiff, numFullDiff, wpm, accuracyPercentage);
     
     document.getElementById('textBoxC').innerHTML = '<h2>Result Sheet:</h2>' + 
@@ -320,20 +309,16 @@ function compareParagraphs() {
         span.style.fontWeight = 'bold';
     });
     
-    // Reset timer for next comparison
     startTime = null;
     clearTimeout(typingTimer);
 }
 
 function generateAIAnalysis(originalText, userText, halfMistakes, fullMistakes, wpm, accuracy) {
-    // Analyze common mistakes
     const mistakeAnalysis = analyzeMistakes(originalText, userText);
     
-    // Generate personalized feedback
     let feedback = '<div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">';
     feedback += '<h3 style="color: #3f37c9; margin-bottom: 10px;">Performance Summary</h3>';
     
-    // Overall assessment
     if (accuracy >= 95) {
         feedback += '<p>🌟 <strong>Excellent work!</strong> Your accuracy is outstanding. Keep practicing to maintain this high standard.</p>';
     } else if (accuracy >= 85) {
@@ -344,7 +329,6 @@ function generateAIAnalysis(originalText, userText, halfMistakes, fullMistakes, 
         feedback += '<p>🔍 <strong>Needs improvement.</strong> Focus on accuracy before increasing your speed.</p>';
     }
     
-    // Speed assessment
     if (wpm >= 50) {
         feedback += '<p>⚡ <strong>Fast typer!</strong> Your speed is impressive. ';
         if (accuracy < 90) {
@@ -361,11 +345,9 @@ function generateAIAnalysis(originalText, userText, halfMistakes, fullMistakes, 
     
     feedback += '</div>';
     
-    // Detailed feedback section
     feedback += '<div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">';
     feedback += '<h3 style="color: #3f37c9; margin-bottom: 10px;">Detailed Feedback</h3>';
     
-    // Add mistake analysis
     if (mistakeAnalysis.commonMistakes.length > 0) {
         feedback += '<h4>🔍 Common Mistake Patterns:</h4><ul>';
         mistakeAnalysis.commonMistakes.forEach(mistake => {
@@ -374,7 +356,6 @@ function generateAIAnalysis(originalText, userText, halfMistakes, fullMistakes, 
         feedback += '</ul>';
     }
     
-    // Add specific suggestions
     feedback += '<h4>💡 Improvement Suggestions:</h4><ul>';
     
     if (mistakeAnalysis.omissionRate > 0.2) {
@@ -393,13 +374,11 @@ function generateAIAnalysis(originalText, userText, halfMistakes, fullMistakes, 
         feedback += '<li>Watch your capitalization. Remember proper nouns and sentence starts need capitals.</li>';
     }
     
-    // Add general tips
     feedback += '<li>Practice difficult sections repeatedly until you master them.</li>';
     feedback += '<li>Try breaking long passages into smaller chunks for focused practice.</li>';
     feedback += '<li>Consider finger placement - proper technique can improve both speed and accuracy.</li>';
     feedback += '</ul>';
     
-    // Add practice recommendations
     feedback += '<h4>📚 Recommended Practice:</h4><ul>';
     feedback += `<li>Focus on ${mistakeAnalysis.mostErrorProneWords.length > 0 ? 
         'these words: ' + mistakeAnalysis.mostErrorProneWords.join(', ') + 
@@ -414,7 +393,6 @@ function generateAIAnalysis(originalText, userText, halfMistakes, fullMistakes, 
 }
 
 function analyzeMistakes(originalText, userText) {
-    // This would analyze the text and return common mistake patterns
     const analysis = {
         commonMistakes: [],
         omissionRate: 0,
@@ -424,11 +402,9 @@ function analyzeMistakes(originalText, userText) {
         mostErrorProneWords: []
     };
     
-    // Sample analysis - in a real app this would be more sophisticated
     const wordPairs = [];
     const minLength = Math.min(originalText.length, userText.length);
     
-    // Find word-by-word differences
     for (let i = 0; i < minLength; i++) {
         const origWord = originalText[i].toLowerCase();
         const userWord = userText[i].toLowerCase();
@@ -438,7 +414,6 @@ function analyzeMistakes(originalText, userText) {
         }
     }
     
-    // Count different types of errors
     let omissionCount = 0;
     let additionCount = 0;
     let spellingCount = 0;
@@ -460,18 +435,15 @@ function analyzeMistakes(originalText, userText) {
             spellingCount++;
             errorWords.push(pair.original);
         } else {
-            // Other types of errors
             errorWords.push(pair.original);
         }
     });
     
-    // Calculate rates
     analysis.omissionRate = omissionCount / originalText.length;
     analysis.additionRate = additionCount / originalText.length;
     analysis.spellingErrorRate = spellingCount / originalText.length;
     analysis.capitalizationErrorRate = capitalizationCount / originalText.length;
     
-    // Find most common error words
     const wordFrequency = {};
     errorWords.forEach(word => {
         const lowerWord = word.toLowerCase();
@@ -483,7 +455,6 @@ function analyzeMistakes(originalText, userText) {
         .slice(0, 5)
         .map(entry => entry[0]);
     
-    // Generate common mistake descriptions
     if (capitalizationCount > 0) {
         analysis.commonMistakes.push(`Capitalization errors (${capitalizationCount} instances)`);
     }
